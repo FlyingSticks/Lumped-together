@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>the fused and the split — v1</title>
+<style>
+  body{margin:0;background:#faf6ef;color:#43203f;
+       font-family:"Avenir Next","Futura","Century Gothic",sans-serif;}
+  .wrap{max-width:960px;margin:0 auto;padding:14px 12px 40px;}
+  h1{font-size:20px;font-weight:600;margin:6px 0 2px;}
+  .sub{font-size:12.5px;color:#6a2c91;margin:0 0 14px;}
+  .row{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-start;}
+  .panel{background:#faf6ef;border:1px solid #d8cfbf;border-radius:6px;
+         padding:8px;flex:1 1 400px;min-width:320px;}
+  .panel h2{font-size:11px;font-weight:600;letter-spacing:.14em;
+            text-transform:uppercase;color:#6a2c91;margin:2px 4px 6px;}
+  svg{display:block;width:100%;height:auto;touch-action:none;}
+  .ctl{display:flex;align-items:center;gap:10px;margin:8px 4px 2px;
+       font-size:12px;}
+  input[type=range]{flex:1;accent-color:#c0322b;}
+  .ledger{border:1px solid #d8cfbf;border-radius:6px;margin-top:14px;
+          padding:10px 12px;font-size:12.5px;}
+  .ledger h2{font-size:11px;font-weight:600;letter-spacing:.14em;
+             text-transform:uppercase;color:#6a2c91;margin:0 0 8px;}
+  .lrow{display:flex;align-items:baseline;gap:10px;padding:4px 0;
+        border-top:1px dashed #d8cfbf;}
+  .lrow:first-of-type{border-top:none;}
+  .lname{flex:0 0 240px;}
+  .lval{font-family:ui-monospace,Menlo,monospace;font-size:12px;}
+  .meter{flex:1;height:8px;background:#efe7d8;border-radius:4px;
+         overflow:hidden;min-width:80px;}
+  .meter i{display:block;height:100%;background:#6a2c91;width:0%;}
+  .tag{font-size:10px;letter-spacing:.08em;text-transform:uppercase;
+       color:#b08948;}
+  .note{margin-top:16px;font-size:13.5px;line-height:1.55;max-width:74ch;}
+  .note h2{font-size:11px;font-weight:600;letter-spacing:.14em;
+           text-transform:uppercase;color:#6a2c91;margin:0 0 6px;}
+  .note p{margin:0 0 10px;}
+  .k-glide{color:#c0322b;font-weight:600;}
+  .k-slit{color:#6a2c91;font-weight:600;}
+  .k-fused{color:#b08948;font-weight:600;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>The fused and the split — v1</h1>
+  <p class="sub">the rate square as an occupancy map · drag the red marker · one congruence, two readings</p>
+
+  <div class="row">
+    <div class="panel">
+      <h2>the rate square (r<sub>u</sub>, r<sub>v</sub>)</h2>
+      <svg id="sq" viewBox="0 0 420 430" aria-label="rate square"></svg>
+    </div>
+    <div class="panel">
+      <h2>both readings of the slab &nbsp;·&nbsp; <tspan> </tspan><span style="color:#c0322b">glide = edges</span> · <span style="color:#6a2c91">cross-slit = rays</span></h2>
+      <svg id="rd" viewBox="0 0 420 430" aria-label="two readings"></svg>
+      <div class="ctl">
+        <span>slab depth λ*</span>
+        <input id="lam" type="range" min="0.20" max="0.70" step="0.01" value="0.50">
+        <span class="lval" id="lamv">0.50</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="ledger">
+    <h2>ledger — the two balances</h2>
+    <div class="lrow">
+      <span class="lname">product balance · gauge product per channel</span>
+      <span class="lval" id="prodv">1.000000000000</span>
+      <span class="tag">holds everywhere</span>
+    </div>
+    <div class="lrow">
+      <span class="lname">area balance · separation r<sub>u</sub>r<sub>v</sub>|r<sub>v</sub>−r<sub>u</sub>|</span>
+      <span class="lval" id="sepv">0.0000</span>
+      <div class="meter"><i id="sepm"></i></div>
+      <span class="tag">closes on the locus</span>
+    </div>
+    <div class="lrow">
+      <span class="lname">bow of the ray reading (max chord dev.)</span>
+      <span class="lval" id="bowv">0.0000</span>
+      <div class="meter"><i id="bowm"></i></div>
+      <span class="tag">zero iff separation zero</span>
+    </div>
+  </div>
+
+  <div class="note">
+    <h2>what this shows</h2>
+    <p>Every point of the square is one line congruence carrying two readings.
+    The <span class="k-slit">ray reading</span> collapses each congruence line to its
+    pierce-point — a camera: pinhole on the diagonal, pushbroom and orthographic on the
+    r&nbsp;=&nbsp;0 edges, cross-slit everywhere else. The
+    <span class="k-glide">edge reading</span> draws each line as a graduated projector —
+    the glide construction. Per channel the two gauges are reciprocal,
+    (1−rλ) against 1/(1−rλ), product&nbsp;1: that identity holds at every point of the
+    square and is the product balance.</p>
+    <p>The <span class="k-fused">gold locus</span> — the diagonal plus the two
+    r&nbsp;=&nbsp;0 edges — is where the separation
+    r<sub>u</sub>r<sub>v</sub>|r<sub>v</sub>−r<sub>u</sub>| closes. There the two
+    readings rule the same line family (the ray curves straighten onto the glide lines,
+    opposite graduations on one stroke) and the construction is unambiguously optical.
+    Off the locus — the whole interior and the r&nbsp;=&nbsp;1 edges — the point is
+    doubly occupied: the ray reading is a buildable cross-slit camera, the edge reading
+    is a glide no camera produces, and the purple depth curves bow away from the red
+    lines by exactly the amount the separation meter reports. Fused against split, not
+    optics against drafting: the camera goes everywhere the glide goes; only on the
+    locus are they the same picture.</p>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   FS — math layer, exposed for the headless check
+   (smoke_fused_split.js, 13/13). Depth lambda in [0,1] from
+   picture plane toward the vanishing / slit structure; per
+   channel the glide gauge is (1 - r*lambda), the ray gauge
+   its reciprocal.
+   ============================================================ */
+(function(){
+  function glidePt(x,y,ru,rv,l){ return {X:x*(1-ru*l), Y:y*(1-rv*l)}; }
+  function slitPt (x,y,ru,rv,l){ return {X:x/(1-ru*l), Y:y/(1-rv*l)}; }
+  function sep(ru,rv){ return ru*rv*Math.abs(rv-ru); }
+  function gaugeDrift(ru,rv,l){
+    var du=Math.abs((1-ru*l)*(1/(1-ru*l))-1),
+        dv=Math.abs((1-rv*l)*(1/(1-rv*l))-1);
+    return Math.max(du,dv);
+  }
+  function bow(x,y,ru,rv,l,N){
+    N=N||41; var a=slitPt(x,y,ru,rv,0), b=slitPt(x,y,ru,rv,l);
+    var dx=b.X-a.X, dy=b.Y-a.Y, L=Math.hypot(dx,dy)||1, m=0;
+    for(var i=0;i<N;i++){ var t=l*i/(N-1), p=slitPt(x,y,ru,rv,t);
+      var d=Math.abs(dx*(p.Y-a.Y)-dy*(p.X-a.X))/L; if(d>m)m=d; }
+    return m;
+  }
+  var FS={glidePt:glidePt, slitPt:slitPt, sep:sep,
+          gaugeDrift:gaugeDrift, bow:bow};
+  if (typeof window!=='undefined') window.FS=FS;
+  if (typeof module!=='undefined' && module.exports) module.exports=FS;
+})();
+
+(function(){
+if (typeof document==='undefined') return;
+var FS=window.FS;
+var NS='http://www.w3.org/2000/svg';
+
+/* palette */
+var CREAM='#faf6ef', PLUM='#43203f', PURPLE='#6a2c91',
+    CRIMSON='#c0322b', GOLD='#b08948', RULE='#d8cfbf';
+
+/* state */
+var S={ ru:0.72, rv:0.34, lam:0.50 };
+var EPS=0.035;   /* snap width to the fused locus */
+
+function el(svg,name,at){
+  var e=document.createElementNS(NS,name);
+  for(var k in at) e.setAttribute(k,at[k]);
+  svg.appendChild(e); return e;
+}
+function txt(svg,x,y,s,at){
+  at=at||{}; at.x=x; at.y=y;
+  at['font-family']='"Avenir Next","Futura","Century Gothic",sans-serif';
+  var e=el(svg,'text',at); e.textContent=s; return e;
+}
+
+/* ============ panel A — the rate square ============ */
+var sq=document.getElementById('sq');
+var A={x0:58, y0:36, w:320, h:320};          /* plot frame */
+function fx(r){ return A.x0 + r*A.w; }        /* ru -> px  */
+function fy(r){ return A.y0 + (1-r)*A.h; }    /* rv -> px  */
+
+function buildSquare(){
+  /* split interior wash */
+  el(sq,'rect',{x:A.x0,y:A.y0,width:A.w,height:A.h,
+    fill:'#6a2c91','fill-opacity':0.05});
+  /* frame */
+  el(sq,'rect',{x:A.x0,y:A.y0,width:A.w,height:A.h,
+    fill:'none',stroke:PLUM,'stroke-width':1});
+  /* split edges: r=1 (right, top) */
+  el(sq,'line',{x1:fx(1),y1:fy(0),x2:fx(1),y2:fy(1),
+    stroke:PURPLE,'stroke-width':2.5,'stroke-dasharray':'5 4'});
+  el(sq,'line',{x1:fx(0),y1:fy(1),x2:fx(1),y2:fy(1),
+    stroke:PURPLE,'stroke-width':2.5,'stroke-dasharray':'5 4'});
+  /* fused locus: diagonal + r=0 edges, gold */
+  el(sq,'line',{x1:fx(0),y1:fy(0),x2:fx(1),y2:fy(1),
+    stroke:GOLD,'stroke-width':4,'stroke-linecap':'round'});
+  el(sq,'line',{x1:fx(0),y1:fy(0),x2:fx(1),y2:fy(0),
+    stroke:GOLD,'stroke-width':4,'stroke-linecap':'round'});
+  el(sq,'line',{x1:fx(0),y1:fy(0),x2:fx(0),y2:fy(1),
+    stroke:GOLD,'stroke-width':4,'stroke-linecap':'round'});
+  /* corners */
+  var cs=[[0,0,'orthographic',6,14],[1,1,'one-point',-6,-8],
+          [1,0,'pushbroom',-6,14],[0,1,'pushbroom',6,-8]];
+  cs.forEach(function(c){
+    el(sq,'circle',{cx:fx(c[0]),cy:fy(c[1]),r:4,fill:PLUM});
+    txt(sq,fx(c[0])+c[3],fy(c[1])+c[4],c[2],
+      {'font-size':10,fill:PLUM,
+       'text-anchor':c[3]>0?'start':'end','font-weight':600});
+  });
+  /* region labels */
+  txt(sq,fx(0.52),fy(0.44),'pencil · fused',
+    {'font-size':10,fill:GOLD,'font-weight':600,
+     transform:'rotate(-45 '+fx(0.52)+' '+fy(0.44)+')','text-anchor':'middle'});
+  txt(sq,fx(0.5),fy(0)+16,'pushbroom / affine · fused',
+    {'font-size':9.5,fill:GOLD,'text-anchor':'middle'});
+  txt(sq,fx(0)-8,fy(0.5),'pushbroom / affine · fused',
+    {'font-size':9.5,fill:GOLD,'text-anchor':'middle',
+     transform:'rotate(-90 '+(fx(0)-8)+' '+fy(0.5)+')'});
+  txt(sq,fx(1)+8,fy(0.5),'vanishing-axis · split',
+    {'font-size':9.5,fill:PURPLE,'text-anchor':'middle',
+     transform:'rotate(-90 '+(fx(1)+8)+' '+fy(0.5)+')'});
+  txt(sq,fx(0.5),fy(1)-8,'vanishing-axis · split',
+    {'font-size':9.5,fill:PURPLE,'text-anchor':'middle'});
+  txt(sq,fx(0.68),fy(0.20),'general glide + cross-slit',
+    {'font-size':10,fill:PURPLE,'text-anchor':'middle','font-weight':600});
+  txt(sq,fx(0.68),fy(0.20)+12,'split · doubly occupied',
+    {'font-size':9,fill:PURPLE,'text-anchor':'middle'});
+  /* axis titles */
+  txt(sq,fx(0.5),fy(0)+34,'r\u1d64  \u2014 u-channel rate',
+    {'font-size':10,fill:PLUM,'text-anchor':'middle'});
+  txt(sq,A.x0-40,fy(0.5),'r\u1d65',
+    {'font-size':10,fill:PLUM,'text-anchor':'middle'});
+  /* readout */
+  Rq.read=txt(sq,fx(0.5),A.y0-14,'',
+    {'font-size':11,fill:PLUM,'text-anchor':'middle',
+     'font-family':'ui-monospace,Menlo,monospace'});
+  /* marker — persistent handle, created once */
+  Rq.halo=el(sq,'circle',{r:15,fill:CRIMSON,'fill-opacity':0.15});
+  Rq.dot =el(sq,'circle',{r:8,fill:CRIMSON,stroke:CREAM,
+    'stroke-width':2,style:'cursor:grab'});
+}
+var Rq={};   /* square refs */
+
+/* ============ panel B — the two readings ============ */
+var rd=document.getElementById('rd');
+var B={cx:210, cy:212, s:62};   /* px per world unit; box half-size 1 */
+function px(X){ return B.cx + X*B.s; }
+function py(Y){ return B.cy - Y*B.s; }
+var CORN=[[1,1],[-1,1],[-1,-1],[1,-1]];
+var Rr={};   /* reading refs */
+
+function buildReadings(){
+  el(rd,'clipPath',{id:'clipB'}).appendChild(
+    (function(){var r=document.createElementNS(NS,'rect');
+      r.setAttribute('x',4);r.setAttribute('y',4);
+      r.setAttribute('width',412);r.setAttribute('height',400);
+      return r;})());
+  var g=el(rd,'g',{'clip-path':'url(#clipB)'}); Rr.g=g;
+  /* faint axes */
+  el(g,'line',{x1:px(-3.3),y1:py(0),x2:px(3.3),y2:py(0),
+    stroke:RULE,'stroke-width':1});
+  el(g,'line',{x1:px(0),y1:py(-3.3),x2:px(0),y2:py(3.3),
+    stroke:RULE,'stroke-width':1});
+  /* dynamic elements — created once, updated in place */
+  Rr.slitCurves=CORN.map(function(){ return el(g,'polyline',
+    {fill:'none',stroke:PURPLE,'stroke-width':1.8}); });
+  Rr.slitFloor=el(g,'polygon',{fill:'none',stroke:PURPLE,
+    'stroke-width':1.6,'stroke-dasharray':'6 4'});
+  Rr.glideLines=CORN.map(function(){ return el(g,'line',
+    {stroke:CRIMSON,'stroke-width':1.8}); });
+  Rr.glideFloor=el(g,'polygon',{fill:'none',stroke:CRIMSON,
+    'stroke-width':1.6});
+  /* picture-plane square — shared, true-size, drawn last */
+  Rr.top=el(g,'polygon',{fill:'none',stroke:GOLD,'stroke-width':2.6});
+  Rr.top.setAttribute('points',CORN.map(function(c){
+    return px(c[0])+','+py(c[1]);}).join(' '));
+  txt(rd,px(0),py(1)-10,'picture plane · true size · shared',
+    {'font-size':9.5,fill:GOLD,'text-anchor':'middle'});
+  /* badge */
+  Rr.badgeBox=el(rd,'rect',{x:12,y:12,rx:4,width:74,height:22,
+    fill:GOLD,'fill-opacity':0.9});
+  Rr.badge=txt(rd,49,27,'FUSED',{'font-size':11,fill:CREAM,
+    'font-weight':700,'text-anchor':'middle','letter-spacing':'.08em'});
+  Rr.caption=txt(rd,210,422,'',{'font-size':10,fill:PLUM,
+    'text-anchor':'middle'});
+}
+
+/* ============ update ============ */
+function snap(r){                       /* to the fused locus */
+  var ru=r.ru, rv=r.rv;
+  if(Math.abs(ru-rv)<EPS){var m=(ru+rv)/2; ru=m; rv=m;}
+  if(ru<EPS) ru=0;
+  if(rv<EPS) rv=0;
+  if(ru>1-EPS) ru=1;
+  if(rv>1-EPS) rv=1;
+  return {ru:ru, rv:rv};
+}
+function update(){
+  var ru=S.ru, rv=S.rv, l=S.lam, i;
+  /* square */
+  Rq.dot.setAttribute('cx',fx(ru));  Rq.dot.setAttribute('cy',fy(rv));
+  Rq.halo.setAttribute('cx',fx(ru)); Rq.halo.setAttribute('cy',fy(rv));
+  Rq.read.textContent='(r\u1d64, r\u1d65) = ('+ru.toFixed(2)+', '+rv.toFixed(2)+')';
+  /* readings */
+  for(i=0;i<4;i++){
+    var c=CORN[i];
+    var gp=FS.glidePt(c[0],c[1],ru,rv,l);
+    Rr.glideLines[i].setAttribute('x1',px(c[0]));
+    Rr.glideLines[i].setAttribute('y1',py(c[1]));
+    Rr.glideLines[i].setAttribute('x2',px(gp.X));
+    Rr.glideLines[i].setAttribute('y2',py(gp.Y));
+    var pts=[], N=40, j;
+    for(j=0;j<=N;j++){
+      var t=l*j/N, sp=FS.slitPt(c[0],c[1],ru,rv,t);
+      pts.push(px(sp.X)+','+py(sp.Y));
+    }
+    Rr.slitCurves[i].setAttribute('points',pts.join(' '));
+  }
+  Rr.glideFloor.setAttribute('points',CORN.map(function(c){
+    var p=FS.glidePt(c[0],c[1],ru,rv,l);
+    return px(p.X)+','+py(p.Y);}).join(' '));
+  Rr.slitFloor.setAttribute('points',CORN.map(function(c){
+    var p=FS.slitPt(c[0],c[1],ru,rv,l);
+    return px(p.X)+','+py(p.Y);}).join(' '));
+  /* ledger */
+  var s=FS.sep(ru,rv), b=FS.bow(1,1,ru,rv,l), d=FS.gaugeDrift(ru,rv,l);
+  document.getElementById('prodv').textContent=
+    (1-d).toFixed(12)+' / '+(1+d).toFixed(12).slice(0,14);
+  document.getElementById('sepv').textContent=s.toFixed(4);
+  document.getElementById('sepm').style.width=Math.min(100,s/0.20*100)+'%';
+  document.getElementById('bowv').textContent=b.toFixed(4)+' u';
+  document.getElementById('bowm').style.width=Math.min(100,b/1.2*100)+'%';
+  /* badge */
+  var fused = s<1e-12;
+  Rr.badgeBox.setAttribute('fill', fused?GOLD:PURPLE);
+  Rr.badge.textContent = fused?'FUSED':'SPLIT';
+  Rr.caption.textContent = fused
+    ? 'one line family, two graduations — the construction is optical'
+    : 'two constructions at one point — camera (purple) + drafted twin (red)';
+}
+
+/* ============ drag — house pattern ============ */
+var drag=null;
+function toSq(ev){
+  var pt=sq.createSVGPoint(); pt.x=ev.clientX; pt.y=ev.clientY;
+  var p=pt.matrixTransform(sq.getScreenCTM().inverse());
+  return { ru:Math.min(1,Math.max(0,(p.x-A.x0)/A.w)),
+           rv:Math.min(1,Math.max(0,1-(p.y-A.y0)/A.h)) };
+}
+function down(ev){
+  if(drag) return;
+  drag={id:ev.pointerId};
+  var r=snap(toSq(ev)); S.ru=r.ru; S.rv=r.rv; update();
+  ev.preventDefault();
+}
+window.addEventListener('pointermove',function(ev){
+  if(!drag||ev.pointerId!==drag.id) return;
+  var r=snap(toSq(ev)); S.ru=r.ru; S.rv=r.rv; update();
+});
+window.addEventListener('pointerup',function(ev){
+  if(drag&&ev.pointerId===drag.id) drag=null;
+});
+window.addEventListener('pointercancel',function(ev){
+  if(drag&&ev.pointerId===drag.id) drag=null;
+});
+
+/* ============ init ============ */
+buildSquare(); buildReadings();
+Rq.dot.addEventListener('pointerdown',down);
+sq.addEventListener('pointerdown',down);   /* tap anywhere in the square */
+document.getElementById('lam').addEventListener('input',function(ev){
+  S.lam=parseFloat(ev.target.value);
+  document.getElementById('lamv').textContent=S.lam.toFixed(2);
+  update();
+});
+update();
+})();
+</script>
+</body>
+</html>
