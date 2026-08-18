@@ -39,7 +39,7 @@
 <body>
 <div class="wrap">
   <h1>The mirror — v1</h1>
-  <p class="sub">the camera and the drawing as inverse points · drag P, drag the slits · z\u2020 = Z\u2081Z\u2082 / z</p>
+  <p class="sub">the camera and the drawing as inverse points · drag P, drag the slits · z† = Z₁Z₂ / z</p>
 
   <div class="panel">
     <svg id="st" viewBox="0 0 460 358" aria-label="mirror stage"></svg>
@@ -52,17 +52,17 @@
   <div class="ledger">
     <h2>ledger</h2>
     <div class="lrow">
-      <span class="lname">mirror law &nbsp; z · z\u2020 = R\u00b2</span>
+      <span class="lname">mirror law &nbsp; z · z† = R²</span>
       <span class="lval" id="mlaw"></span>
       <span class="tag">holds everywhere</span>
     </div>
     <div class="lrow">
-      <span class="lname">cross-channel &nbsp; \u03bd\u1d64·\u03bd\u1d65\u2020 , \u03bd\u1d65·\u03bd\u1d64\u2020</span>
+      <span class="lname">cross-channel &nbsp; νᵤ·νᵥ† , νᵥ·νᵤ†</span>
       <span class="lval" id="xchan"></span>
-      <span class="tag">the swap \u00b7 holds everywhere</span>
+      <span class="tag">the swap · holds everywhere</span>
     </div>
     <div class="lrow">
-      <span class="lname">same-channel &nbsp; \u03bd\u1d64·\u03bd\u1d64\u2020</span>
+      <span class="lname">same-channel &nbsp; νᵤ·νᵤ†</span>
       <span class="lval" id="schan"></span>
       <span class="tag">closes only on the seam</span>
     </div>
@@ -71,16 +71,16 @@
   <div class="note">
     <h2>what this shows</h2>
     <p>The gold circle is the anchor in cross-section: centered at the principal
-    point, radius R = \u221a(Z\u2081Z\u2082), the geometric mean of the two slit depths. The
-    duality \u03b4 acts on depth as reflection in this mirror: the probe P at depth z
-    and its image P\u2020 at Z\u2081Z\u2082/z are inverse points — the tangent from the outer
+    point, radius R = √(Z₁Z₂), the geometric mean of the two slit depths. The
+    duality δ acts on depth as reflection in this mirror: the probe P at depth z
+    and its image P† at Z₁Z₂/z are inverse points — the tangent from the outer
     one touches the circle directly above the inner one, the classical witness of
-    z·z\u2020 = R\u00b2. This is VM·VI = VP\u00b2 promoted to the anchor of the whole engine:
+    z·z† = R². This is VM·VI = VP² promoted to the anchor of the whole engine:
     the camera reading and the glide reading of one depth are each other's mirror
     images, and the mirror flips depth reciprocally — near for far.</p>
     <p>The mirror also swaps the channels, because it swaps the slits: the crossing
-    arrows carry \u03bd\u1d64 to \u03bd\u1d65\u2020 and \u03bd\u1d65 to \u03bd\u1d64\u2020, product 1 always. Drag the slits
-    together and the crossing collapses: on the seam Z\u2081 = Z\u2082 the swap becomes
+    arrows carry νᵤ to νᵥ† and νᵥ to νᵤ†, product 1 always. Drag the slits
+    together and the crossing collapses: on the seam Z₁ = Z₂ the swap becomes
     invisible, the same-channel product closes too, and the configuration is its
     own mirror image — fused means self-dual. The circle's crossing of the axis at
     +R is the fixed depth: the one place the mirror moves nothing.</p>
@@ -154,19 +154,19 @@ D.Tlab   = txt(0,0,'T',{'font-size':9,fill:PURPLE});
 /* slits */
 D.s1halo = el('circle',{r:14,fill:CRIMSON,'fill-opacity':0.14,cy:AX});
 D.s1     = el('circle',{r:6.5,fill:CRIMSON,stroke:CREAM,'stroke-width':1.6,cy:AX,style:'cursor:grab'});
-D.s1lab  = txt(0,AX+22,'u-slit · Z\u2081',{'font-size':9,fill:CRIMSON,'text-anchor':'middle'});
+D.s1lab  = txt(0,AX+22,'u-slit · Z₁',{'font-size':9,fill:CRIMSON,'text-anchor':'middle'});
 D.s2halo = el('circle',{r:14,fill:BLUE,'fill-opacity':0.14,cy:AX});
 D.s2     = el('circle',{r:6.5,fill:BLUE,stroke:CREAM,'stroke-width':1.6,cy:AX,style:'cursor:grab'});
-D.s2lab  = txt(0,AX+36,'v-slit · Z\u2082',{'font-size':9,fill:BLUE,'text-anchor':'middle'});
+D.s2lab  = txt(0,AX+36,'v-slit · Z₂',{'font-size':9,fill:BLUE,'text-anchor':'middle'});
 /* probe and image */
 D.phalo  = el('circle',{r:15,fill:PLUM,'fill-opacity':0.12,cy:AX});
 D.P      = el('circle',{r:7,fill:PLUM,stroke:CREAM,'stroke-width':1.8,cy:AX,style:'cursor:grab'});
 D.Plab   = txt(0,AX-14,'P · z',{'font-size':9.5,fill:PLUM,'text-anchor':'middle','font-weight':600});
 D.Pd     = el('circle',{r:5,fill:CREAM,stroke:PLUM,'stroke-width':2,cy:AX});
-D.Pdlab  = txt(0,AX-14,'P\u2020',{'font-size':9.5,fill:PLUM,'text-anchor':'middle','font-weight':600});
+D.Pdlab  = txt(0,AX-14,'P†',{'font-size':9.5,fill:PLUM,'text-anchor':'middle','font-weight':600});
 /* channel swap strip */
 var STRIP=300;
-txt(14,STRIP-6,'the swap: \u03bd\u1d64 \u2192 \u03bd\u1d65\u2020 · \u03bd\u1d65 \u2192 \u03bd\u1d64\u2020',{'font-size':9,fill:PURPLE});
+txt(14,STRIP-6,'the swap: νᵤ → νᵥ† · νᵥ → νᵤ†',{'font-size':9,fill:PURPLE});
 D.nu_u  = txt(120,STRIP+12,'',{'font-size':10,fill:CRIMSON,'font-family':'ui-monospace,Menlo,monospace'});
 D.nu_v  = txt(120,STRIP+30,'',{'font-size':10,fill:BLUE,'font-family':'ui-monospace,Menlo,monospace'});
 D.nu_ud = txt(330,STRIP+12,'',{'font-size':10,fill:CRIMSON,'font-family':'ui-monospace,Menlo,monospace','text-anchor':'end'});
@@ -216,10 +216,10 @@ function update(){
     (tx+(ux+vx)*m)+','+(ty-(uy+vy)*m)+' L'+(tx+vx*m)+','+(ty-vy*m));
   /* channel strip */
   var nu_u=z/Z1, nu_v=z/Z2, nu_ud=zd/Z1, nu_vd=zd/Z2;
-  D.nu_u.textContent='\u03bd\u1d64 = '+fmt(nu_u);
-  D.nu_v.textContent='\u03bd\u1d65 = '+fmt(nu_v);
-  D.nu_ud.textContent='\u03bd\u1d64\u2020 = '+fmt(nu_ud);
-  D.nu_vd.textContent='\u03bd\u1d65\u2020 = '+fmt(nu_vd);
+  D.nu_u.textContent='νᵤ = '+fmt(nu_u);
+  D.nu_v.textContent='νᵥ = '+fmt(nu_v);
+  D.nu_ud.textContent='νᵤ† = '+fmt(nu_ud);
+  D.nu_vd.textContent='νᵥ† = '+fmt(nu_vd);
   var seam=Math.abs(Z1-Z2)<1e-9;
   /* arrows: u -> v(dagger) row, v -> u(dagger) row (crossing); on seam, parallel */
   D.arr1.setAttribute('x1',180); D.arr1.setAttribute('y1',STRIP+8);
@@ -228,7 +228,7 @@ function update(){
   D.arr2.setAttribute('x2',252); D.arr2.setAttribute('y2',seam?STRIP+26:STRIP+8);
   /* ledger */
   document.getElementById('mlaw').textContent=
-    z.toFixed(4)+' \u00d7 '+zd.toFixed(4)+' = '+(z*zd).toFixed(6)+'  ·  R\u00b2 = '+(R*R).toFixed(6)+
+    z.toFixed(4)+' × '+zd.toFixed(4)+' = '+(z*zd).toFixed(6)+'  ·  R² = '+(R*R).toFixed(6)+
     '  (drift '+Math.abs(z*zd-R*R).toExponential(1)+')';
   document.getElementById('xchan').textContent=
     (nu_u*nu_vd).toFixed(12)+' , '+(nu_v*nu_ud).toFixed(12);
