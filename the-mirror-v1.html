@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>the mirror — v1</title>
+<style>
+  body{margin:0;background:#faf6ef;color:#43203f;
+       font-family:"Avenir Next","Futura","Century Gothic",sans-serif;}
+  .wrap{max-width:960px;margin:0 auto;padding:14px 12px 40px;}
+  h1{font-size:20px;font-weight:600;margin:6px 0 2px;}
+  .sub{font-size:12.5px;color:#6a2c91;margin:0 0 12px;}
+  .panel{background:#faf6ef;border:1px solid #d8cfbf;border-radius:6px;
+         padding:8px;}
+  svg{display:block;width:100%;height:auto;touch-action:none;}
+  .ctl{display:flex;align-items:center;gap:12px;margin:8px 4px 2px;
+       font-size:12px;flex-wrap:wrap;}
+  button{background:#faf6ef;border:1px solid #b08948;color:#43203f;
+         border-radius:5px;padding:5px 12px;font-size:12px;
+         font-family:inherit;}
+  button:active{background:#efe7d8;}
+  .ledger{border:1px solid #d8cfbf;border-radius:6px;margin-top:12px;
+          padding:10px 12px;font-size:12.5px;}
+  .ledger h2{font-size:11px;font-weight:600;letter-spacing:.14em;
+             text-transform:uppercase;color:#6a2c91;margin:0 0 8px;}
+  .lrow{display:flex;align-items:baseline;gap:10px;padding:4px 0;
+        border-top:1px dashed #d8cfbf;}
+  .lrow:first-of-type{border-top:none;}
+  .lname{flex:0 0 250px;}
+  .lval{font-family:ui-monospace,Menlo,monospace;font-size:12px;}
+  .tag{font-size:10px;letter-spacing:.08em;text-transform:uppercase;
+       color:#b08948;}
+  .note{margin-top:14px;font-size:13.5px;line-height:1.55;max-width:74ch;}
+  .note h2{font-size:11px;font-weight:600;letter-spacing:.14em;
+           text-transform:uppercase;color:#6a2c91;margin:0 0 6px;}
+  .note p{margin:0 0 10px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>The mirror — v1</h1>
+  <p class="sub">the camera and the drawing as inverse points · drag P, drag the slits · z\u2020 = Z\u2081Z\u2082 / z</p>
+
+  <div class="panel">
+    <svg id="st" viewBox="0 0 460 358" aria-label="mirror stage"></svg>
+    <div class="ctl">
+      <button id="seamBtn">Collapse to the seam</button>
+      <span id="badge" style="font-weight:700;letter-spacing:.08em;"></span>
+    </div>
+  </div>
+
+  <div class="ledger">
+    <h2>ledger</h2>
+    <div class="lrow">
+      <span class="lname">mirror law &nbsp; z · z\u2020 = R\u00b2</span>
+      <span class="lval" id="mlaw"></span>
+      <span class="tag">holds everywhere</span>
+    </div>
+    <div class="lrow">
+      <span class="lname">cross-channel &nbsp; \u03bd\u1d64·\u03bd\u1d65\u2020 , \u03bd\u1d65·\u03bd\u1d64\u2020</span>
+      <span class="lval" id="xchan"></span>
+      <span class="tag">the swap \u00b7 holds everywhere</span>
+    </div>
+    <div class="lrow">
+      <span class="lname">same-channel &nbsp; \u03bd\u1d64·\u03bd\u1d64\u2020</span>
+      <span class="lval" id="schan"></span>
+      <span class="tag">closes only on the seam</span>
+    </div>
+  </div>
+
+  <div class="note">
+    <h2>what this shows</h2>
+    <p>The gold circle is the anchor in cross-section: centered at the principal
+    point, radius R = \u221a(Z\u2081Z\u2082), the geometric mean of the two slit depths. The
+    duality \u03b4 acts on depth as reflection in this mirror: the probe P at depth z
+    and its image P\u2020 at Z\u2081Z\u2082/z are inverse points — the tangent from the outer
+    one touches the circle directly above the inner one, the classical witness of
+    z·z\u2020 = R\u00b2. This is VM·VI = VP\u00b2 promoted to the anchor of the whole engine:
+    the camera reading and the glide reading of one depth are each other's mirror
+    images, and the mirror flips depth reciprocally — near for far.</p>
+    <p>The mirror also swaps the channels, because it swaps the slits: the crossing
+    arrows carry \u03bd\u1d64 to \u03bd\u1d65\u2020 and \u03bd\u1d65 to \u03bd\u1d64\u2020, product 1 always. Drag the slits
+    together and the crossing collapses: on the seam Z\u2081 = Z\u2082 the swap becomes
+    invisible, the same-channel product closes too, and the configuration is its
+    own mirror image — fused means self-dual. The circle's crossing of the axis at
+    +R is the fixed depth: the one place the mirror moves nothing.</p>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   MI — math layer, exposed for the headless check
+   (smoke_mirror.js, 10/10). Slits at Z1, Z2 < 0; scene z > 0;
+   mirror radius R = sqrt(Z1*Z2); transport zdag = Z1*Z2/z.
+   ============================================================ */
+(function(){
+  function R_of(Z1,Z2){ return Math.sqrt(Z1*Z2); }
+  function zdag(Z1,Z2,z){ return Z1*Z2/z; }
+  function tangentT(R,d){ /* touch point of tangent from (d,0), d>=R */
+    return [R*R/d, R*Math.sqrt(Math.max(0,1-(R*R)/(d*d)))];
+  }
+  var MI={R_of:R_of, zdag:zdag, tangentT:tangentT};
+  if (typeof window!=='undefined') window.MI=MI;
+  if (typeof module!=='undefined' && module.exports) module.exports=MI;
+})();
+
+(function(){
+if (typeof document==='undefined') return;
+var MI=window.MI;
+var NS='http://www.w3.org/2000/svg';
+var CREAM='#faf6ef', PLUM='#43203f', PURPLE='#6a2c91',
+    CRIMSON='#c0322b', BLUE='#1f4fd8', GOLD='#b08948', RULE='#d8cfbf';
+
+/* state — slit depths negative, probe positive */
+var S={ Z1:-1.25, Z2:-3.0, z:1.7 };
+var LIM={Zmin:-4.0, Zmax:-0.45, zMin:0.35, zMax:4.6};
+var EPS=0.06;    /* seam snap */
+
+var st=document.getElementById('st');
+/* world -> px: axis y, depth x. world x in [-4.5, 5] */
+var K=44, X0=210, AX=210;                 /* axis at y=210 */
+function px(w){ return X0 + w*K; }
+function el(name,at,parent){
+  var e=document.createElementNS(NS,name);
+  for(var k in at) e.setAttribute(k,at[k]);
+  (parent||st).appendChild(e); return e;
+}
+function txt(x,y,s,at){
+  at=at||{}; at.x=x; at.y=y;
+  at['font-family']='"Avenir Next","Futura","Century Gothic",sans-serif';
+  var e=el('text',at); e.textContent=s; return e;
+}
+
+/* ---------- static scenery ---------- */
+el('line',{x1:8,y1:AX,x2:452,y2:AX,stroke:PLUM,'stroke-width':1.2});
+txt(448,AX+14,'depth axis (ghost normal)',{'font-size':8.5,fill:PLUM,'text-anchor':'end'});
+/* picture plane */
+el('line',{x1:px(0),y1:26,x2:px(0),y2:AX+58,stroke:GOLD,'stroke-width':2.6});
+txt(px(0),AX+72,'picture plane · principal point',{'font-size':9,fill:GOLD,'text-anchor':'middle'});
+el('circle',{cx:px(0),cy:AX,r:2.6,fill:GOLD});
+
+/* ---------- dynamic elements (created once) ---------- */
+var D={};
+D.mirror = el('circle',{fill:'none',stroke:GOLD,'stroke-width':2.2,cy:AX});
+D.fixL   = el('circle',{r:3,fill:GOLD,cy:AX});
+D.fixR   = el('circle',{r:3,fill:GOLD,cy:AX});
+D.fixLab = txt(0,AX-10,'fixed · +R',{'font-size':8.5,fill:GOLD,'text-anchor':'middle'});
+D.tangent= el('line',{stroke:PURPLE,'stroke-width':1.5});
+D.radius = el('line',{stroke:GOLD,'stroke-width':1.2,'stroke-dasharray':'3 3'});
+D.drop   = el('line',{stroke:PURPLE,'stroke-width':1.2,'stroke-dasharray':'5 4'});
+D.rt     = el('path',{fill:'none',stroke:PURPLE,'stroke-width':1});
+D.T      = el('circle',{r:3.2,fill:PURPLE});
+D.Tlab   = txt(0,0,'T',{'font-size':9,fill:PURPLE});
+/* slits */
+D.s1halo = el('circle',{r:14,fill:CRIMSON,'fill-opacity':0.14,cy:AX});
+D.s1     = el('circle',{r:6.5,fill:CRIMSON,stroke:CREAM,'stroke-width':1.6,cy:AX,style:'cursor:grab'});
+D.s1lab  = txt(0,AX+22,'u-slit · Z\u2081',{'font-size':9,fill:CRIMSON,'text-anchor':'middle'});
+D.s2halo = el('circle',{r:14,fill:BLUE,'fill-opacity':0.14,cy:AX});
+D.s2     = el('circle',{r:6.5,fill:BLUE,stroke:CREAM,'stroke-width':1.6,cy:AX,style:'cursor:grab'});
+D.s2lab  = txt(0,AX+36,'v-slit · Z\u2082',{'font-size':9,fill:BLUE,'text-anchor':'middle'});
+/* probe and image */
+D.phalo  = el('circle',{r:15,fill:PLUM,'fill-opacity':0.12,cy:AX});
+D.P      = el('circle',{r:7,fill:PLUM,stroke:CREAM,'stroke-width':1.8,cy:AX,style:'cursor:grab'});
+D.Plab   = txt(0,AX-14,'P · z',{'font-size':9.5,fill:PLUM,'text-anchor':'middle','font-weight':600});
+D.Pd     = el('circle',{r:5,fill:CREAM,stroke:PLUM,'stroke-width':2,cy:AX});
+D.Pdlab  = txt(0,AX-14,'P\u2020',{'font-size':9.5,fill:PLUM,'text-anchor':'middle','font-weight':600});
+/* channel swap strip */
+var STRIP=300;
+txt(14,STRIP-6,'the swap: \u03bd\u1d64 \u2192 \u03bd\u1d65\u2020 · \u03bd\u1d65 \u2192 \u03bd\u1d64\u2020',{'font-size':9,fill:PURPLE});
+D.nu_u  = txt(120,STRIP+12,'',{'font-size':10,fill:CRIMSON,'font-family':'ui-monospace,Menlo,monospace'});
+D.nu_v  = txt(120,STRIP+30,'',{'font-size':10,fill:BLUE,'font-family':'ui-monospace,Menlo,monospace'});
+D.nu_ud = txt(330,STRIP+12,'',{'font-size':10,fill:CRIMSON,'font-family':'ui-monospace,Menlo,monospace','text-anchor':'end'});
+D.nu_vd = txt(330,STRIP+30,'',{'font-size':10,fill:BLUE,'font-family':'ui-monospace,Menlo,monospace','text-anchor':'end'});
+D.arr1  = el('line',{stroke:PURPLE,'stroke-width':1.4,'marker-end':'url(#ah)'});
+D.arr2  = el('line',{stroke:PURPLE,'stroke-width':1.4,'marker-end':'url(#ah)'});
+var defs=el('defs',{});
+var mk=el('marker',{id:'ah',viewBox:'0 0 10 10',refX:'9',refY:'5',
+  markerWidth:'7',markerHeight:'7',orient:'auto-start-reverse'},defs);
+el('path',{d:'M0,0 L10,5 L0,10 z',fill:PURPLE},mk);
+
+var badge=document.getElementById('badge');
+
+function fmt(v){ return (v>=0?' ':'')+v.toFixed(4); }
+function update(){
+  var Z1=S.Z1, Z2=S.Z2, z=S.z;
+  var R=MI.R_of(Z1,Z2), zd=MI.zdag(Z1,Z2,z);
+  /* mirror + fixed points */
+  D.mirror.setAttribute('cx',px(0)); D.mirror.setAttribute('r',R*K);
+  D.fixL.setAttribute('cx',px(-R)); D.fixR.setAttribute('cx',px(R));
+  D.fixLab.setAttribute('x',px(R));
+  /* slits */
+  D.s1.setAttribute('cx',px(Z1)); D.s1halo.setAttribute('cx',px(Z1));
+  D.s1lab.setAttribute('x',px(Z1));
+  D.s2.setAttribute('cx',px(Z2)); D.s2halo.setAttribute('cx',px(Z2));
+  D.s2lab.setAttribute('x',px(Z2));
+  /* probe + image */
+  D.P.setAttribute('cx',px(z)); D.phalo.setAttribute('cx',px(z));
+  D.Plab.setAttribute('x',px(z));
+  D.Pd.setAttribute('cx',px(zd)); D.Pdlab.setAttribute('x',px(zd));
+  /* tangent witness from the outer point, drop onto the inner */
+  var outer=Math.max(z,zd), inner=Math.min(z,zd);
+  var T=MI.tangentT(R,outer);
+  D.T.setAttribute('cx',px(T[0])); D.T.setAttribute('cy',AX-T[1]*K);
+  D.Tlab.setAttribute('x',px(T[0])+7); D.Tlab.setAttribute('y',AX-T[1]*K-6);
+  D.tangent.setAttribute('x1',px(outer)); D.tangent.setAttribute('y1',AX);
+  D.tangent.setAttribute('x2',px(T[0]));  D.tangent.setAttribute('y2',AX-T[1]*K);
+  D.radius.setAttribute('x1',px(0)); D.radius.setAttribute('y1',AX);
+  D.radius.setAttribute('x2',px(T[0])); D.radius.setAttribute('y2',AX-T[1]*K);
+  D.drop.setAttribute('x1',px(T[0])); D.drop.setAttribute('y1',AX-T[1]*K);
+  D.drop.setAttribute('x2',px(inner)); D.drop.setAttribute('y2',AX);
+  /* right-angle mark at T between radius and tangent */
+  var ux=(outer-T[0]), uy=T[1]; var un=Math.hypot(ux,uy); ux/=un; uy/=un;
+  var vx=-T[0], vy=T[1]; var vn=Math.hypot(vx,vy); vx/=vn; vy/=vn;
+  var m=7, tx=px(T[0]), ty=AX-T[1]*K;
+  D.rt.setAttribute('d','M'+(tx+ux*m)+','+(ty+uy*m*-1+0)+' L'+
+    (tx+(ux+vx)*m)+','+(ty-(uy+vy)*m)+' L'+(tx+vx*m)+','+(ty-vy*m));
+  /* channel strip */
+  var nu_u=z/Z1, nu_v=z/Z2, nu_ud=zd/Z1, nu_vd=zd/Z2;
+  D.nu_u.textContent='\u03bd\u1d64 = '+fmt(nu_u);
+  D.nu_v.textContent='\u03bd\u1d65 = '+fmt(nu_v);
+  D.nu_ud.textContent='\u03bd\u1d64\u2020 = '+fmt(nu_ud);
+  D.nu_vd.textContent='\u03bd\u1d65\u2020 = '+fmt(nu_vd);
+  var seam=Math.abs(Z1-Z2)<1e-9;
+  /* arrows: u -> v(dagger) row, v -> u(dagger) row (crossing); on seam, parallel */
+  D.arr1.setAttribute('x1',180); D.arr1.setAttribute('y1',STRIP+8);
+  D.arr1.setAttribute('x2',252); D.arr1.setAttribute('y2',seam?STRIP+8:STRIP+26);
+  D.arr2.setAttribute('x1',180); D.arr2.setAttribute('y1',STRIP+26);
+  D.arr2.setAttribute('x2',252); D.arr2.setAttribute('y2',seam?STRIP+26:STRIP+8);
+  /* ledger */
+  document.getElementById('mlaw').textContent=
+    z.toFixed(4)+' \u00d7 '+zd.toFixed(4)+' = '+(z*zd).toFixed(6)+'  ·  R\u00b2 = '+(R*R).toFixed(6)+
+    '  (drift '+Math.abs(z*zd-R*R).toExponential(1)+')';
+  document.getElementById('xchan').textContent=
+    (nu_u*nu_vd).toFixed(12)+' , '+(nu_v*nu_ud).toFixed(12);
+  document.getElementById('schan').textContent=
+    (nu_u*nu_ud).toFixed(6)+(seam?'  — closed':'  — open');
+  badge.textContent = seam ? 'SEAM · self-dual · swap invisible' : 'SPLIT · swap visible';
+  badge.style.color = seam ? GOLD : PURPLE;
+}
+
+/* ---------- drag: house pattern ---------- */
+var drag=null;
+function wx(ev){
+  var pt=st.createSVGPoint(); pt.x=ev.clientX; pt.y=ev.clientY;
+  var p=pt.matrixTransform(st.getScreenCTM().inverse());
+  return (p.x-X0)/K;
+}
+function clampZ(v){ return Math.min(LIM.Zmax,Math.max(LIM.Zmin,v)); }
+function snapSeam(){ if(Math.abs(S.Z1-S.Z2)<EPS){ var m=(S.Z1+S.Z2)/2; S.Z1=m; S.Z2=m; } }
+[['P','z'],['s1','Z1'],['s2','Z2']].forEach(function(h){
+  D[h[0]].addEventListener('pointerdown',function(ev){
+    if(drag) return; drag={id:ev.pointerId,key:h[1]}; ev.preventDefault();
+  });
+});
+window.addEventListener('pointermove',function(ev){
+  if(!drag||ev.pointerId!==drag.id) return;
+  var w=wx(ev);
+  if(drag.key==='z'){
+    var lo=Math.max(LIM.zMin, S.Z1*S.Z2/LIM.zMax);  /* keep P-dagger on stage */
+    S.z=Math.min(LIM.zMax,Math.max(lo,w));
+  } else {
+    S[drag.key]=clampZ(w); snapSeam();
+    S.z=Math.max(S.z, S.Z1*S.Z2/LIM.zMax);
+  }
+  update();
+});
+window.addEventListener('pointerup',function(ev){
+  if(drag&&ev.pointerId===drag.id) drag=null; });
+window.addEventListener('pointercancel',function(ev){
+  if(drag&&ev.pointerId===drag.id) drag=null; });
+
+/* seam button: animate Z2 -> Z1 */
+document.getElementById('seamBtn').addEventListener('click',function(){
+  var from=S.Z2, to=S.Z1, t0=null;
+  var rm=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(rm){ S.Z2=to; update(); return; }
+  function step(ts){
+    if(t0===null) t0=ts;
+    var u=Math.min(1,(ts-t0)/600);
+    S.Z2=from+(to-from)*(u*u*(3-2*u));
+    update();
+    if(u<1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+});
+
+update();
+})();
+</script>
+</body>
+</html>
