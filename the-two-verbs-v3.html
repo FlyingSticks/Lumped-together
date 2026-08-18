@@ -83,6 +83,9 @@
         <span class="lab">GRAIN</span>
         <button class="grain" data-g="2">2</button><button class="grain on" data-g="4">4</button>
         <button class="grain" data-g="8">8</button>
+        <span class="lab" style="margin-left:8px">HARMONIC</span>
+        <button class="gharm" data-m="up">1/k ↑</button>
+        <button class="gharm" data-m="down">1/k ↓</button>
       </div>
       <p class="note">Red squares drag the picture-plane polygon (ratio 1); blue squares drag the floor polygon (ratio 0). Dragging edits the scene and re-bases the ledger.</p>
     </div>
@@ -183,7 +186,27 @@ function simpsonIntL(Q0,Q1,L,n){
   return s/(3*n);}
 
 /* ---------- scene -------------------------------------------------------- */
-let n1=3, n0=4, grain=4, tSlice=0.5;
+let n1=3, n0=4, grain=4, grainMode="uniform", tSlice=0.5;
+/* Level sets: uniform k/grain, or the harmonic progression 1/k.
+   "up": levels at height 1/k — accumulation point at the floor (ratio 0).
+   "down": mirrored, levels 1/k below the picture plane — accumulation at ratio 1.
+   Interior labels in the harmonic modes name the fraction 1/k, measured from
+   whichever end the progression hangs from. */
+const HK=8, FRAC=["","1","½","⅓","¼","⅕","⅙","⅐","⅛"];
+function levelList(){
+  if(grainMode==="uniform")
+    return [...Array(grain+1)].map((_,k)=>({r:k/grain, label:String(k)}));
+  const L=[];
+  if(grainMode==="up"){
+    L.push({r:0,label:"0"});
+    for(let k=HK;k>=1;k--) L.push({r:1/k, label:FRAC[k]});
+  }else{
+    L.push({r:0,label:"0"});
+    for(let k=2;k<=HK;k++) L.push({r:1-1/k, label:FRAC[k]});
+    L.push({r:1,label:"1"});
+  }
+  return L;
+}
 let lMode="quads", lOff=0;
 let rngS=23;
 function rnd(){ rngS=(rngS*1103515245+12345)&0x7fffffff; return rngS/0x7fffffff; }
@@ -225,13 +248,25 @@ el("text",{x:18,y:420,fill:"#8a877c","font-size":"13","letter-spacing":"2"}).tex
 const gProj=el("g",{}), gLevels=el("g",{}), gVol=el("g",{}), gHandles=el("g",{});
 function drawLevels(){
   gLevels.replaceChildren();
-  for(let k=0;k<=grain;k++){
-    const r=k/grain, Y=myF(r);
-    el("line",{x1:X0-6,y1:Y,x2:X1,y2:Y,stroke:"#3fa053","stroke-width":r===1||r===0?1.6:0.9,opacity:r===1||r===0?0.9:0.55},gLevels);
-    el("text",{x:X0-14,y:Y+4,fill:"#3fa053","font-size":"12","text-anchor":"end"},gLevels).textContent=String(k);
+  const Ls=levelList();
+  for(const o of Ls){
+    const Y=myF(o.r), end=o.r===0||o.r===1;
+    el("line",{x1:X0-6,y1:Y,x2:X1,y2:Y,stroke:"#3fa053","stroke-width":end?1.6:0.9,opacity:end?0.9:0.55},gLevels);
+  }
+  /* Labels walk from the sparse end toward the accumulation point, so the
+     canonical fractions (½, ⅓, ¼) survive decluttering; crowded ones yield. */
+  const order=grainMode==="up"?[...Ls].reverse():Ls;
+  const labYs=[];
+  for(const o of order){
+    const Y=myF(o.r), end=o.r===0||o.r===1;
+    if(end || labYs.every(y=>Math.abs(y-Y)>=13)){
+      el("text",{x:X0-14,y:Y+4,fill:"#3fa053","font-size":"12","text-anchor":"end"},gLevels).textContent=o.label;
+      labYs.push(Y);
+    }
   }
   el("text",{x:X0-34,y:(myF(0)+myF(1))/2,fill:"#3fa053","font-size":"11","letter-spacing":"1.5",
-     transform:`rotate(-90 ${X0-34} ${(myF(0)+myF(1))/2})`,"text-anchor":"middle"},gLevels).textContent="COUNT";
+     transform:`rotate(-90 ${X0-34} ${(myF(0)+myF(1))/2})`,"text-anchor":"middle"},gLevels)
+    .textContent=grainMode==="uniform"?"COUNT":"HARMONIC 1/k";
   for(const [r,t] of [[0,"0"],[0.5,"½"],[1,"1"]])
     el("text",{x:X1+10,y:myF(r)+4,fill:"#3fa053","font-size":"12"},gLevels).textContent=t;
   el("text",{x:X1+30,y:(myF(0)+myF(1))/2,fill:"#3fa053","font-size":"11","letter-spacing":"1.5",
@@ -312,8 +347,9 @@ function draw(){
     }
   }
   /* nested grain slices (the Type A web) */
-  for(let k=1;k<grain;k++){
-    const Sl=sliceL(Q0,Q1,L,k/grain);
+  for(const o of levelList()){
+    if(o.r<=0||o.r>=1) continue;
+    const Sl=sliceL(Q0,Q1,L,o.r);
     el("polygon",{points:polyPtsT(Sl),fill:"none",stroke:"#3fa053","stroke-width":1,opacity:0.55},gVol);
   }
   /* seams: the ladder rungs, both views */
@@ -447,10 +483,19 @@ document.querySelectorAll(".n0sel").forEach(b=>b.addEventListener("click",()=>{
   document.querySelectorAll(".n0sel").forEach(x=>x.classList.toggle("on",x===b));
   roll0(); lOff=lOff%n0; rebuildHandles(); rebase(); tick();
 }));
+function setGrainButtons(){
+  document.querySelectorAll(".grain").forEach(x=>
+    x.classList.toggle("on", grainMode==="uniform" && parseInt(x.dataset.g,10)===grain));
+  document.querySelectorAll(".gharm").forEach(x=>
+    x.classList.toggle("on", grainMode===x.dataset.m));
+}
 document.querySelectorAll(".grain").forEach(b=>b.addEventListener("click",()=>{
-  grain=parseInt(b.dataset.g,10);
-  document.querySelectorAll(".grain").forEach(x=>x.classList.toggle("on",x===b));
-  drawLevels(); tick();
+  grainMode="uniform"; grain=parseInt(b.dataset.g,10);
+  setGrainButtons(); drawLevels(); tick();
+}));
+document.querySelectorAll(".gharm").forEach(b=>b.addEventListener("click",()=>{
+  grainMode=b.dataset.m;
+  setGrainButtons(); drawLevels(); tick();
 }));
 S_("bquads").addEventListener("click",()=>{ lMode="quads";
   S_("bquads").classList.add("on"); S_("btris").classList.remove("on"); rebase(); tick(); });
