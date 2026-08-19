@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>35·G · Tetra Drafting Board — Glide Construction</title>
+<title>35·G · Tetra Drafting Board — Glide over Cross-Slit</title>
 <style>
   :root{
     --paper:#f3efe4; --ink:#22201c; --table:#2e2a24; --tray-ink:#efe9da;
@@ -48,23 +48,24 @@
 </style>
 </head>
 <body>
-<div id="sheetwrap"><canvas id="sheet" aria-label="Drafting sheet: plan, elevation, transfer and glide construction"></canvas></div>
+<div id="sheetwrap"><canvas id="sheet" aria-label="Drafting sheet: plan, elevation, transfer, and the front view toggling between cross-slit projection and its glide armature"></canvas></div>
 <div id="tray">
   <span class="ctl"><span class="lab">Zv&nbsp;red</span>
-    <input id="sZv" type="range" min="60" max="240" step="1" value="150">
-    <span class="val" id="vZv">150</span></span>
+    <input id="sZv" type="range" min="60" max="240" step="1" value="103">
+    <span class="val" id="vZv">103</span></span>
   <span class="ctl"><span class="lab">Zh&nbsp;blue</span>
     <input id="sZh" type="range" min="61" max="330" step="1" value="250">
     <span class="val" id="vZh">250</span></span>
   <span class="ctl"><span class="lab">Near</span>
-    <input id="sNear" type="range" min="340" max="640" step="5" value="360">
-    <span class="val" id="vNear">360</span></span>
+    <input id="sNear" type="range" min="340" max="640" step="5" value="435">
+    <span class="val" id="vNear">435</span></span>
   <span class="ctl"><span class="lab">Far</span>
-    <input id="sFar" type="range" min="420" max="700" step="5" value="660">
-    <span class="val" id="vFar">660</span></span>
+    <input id="sFar" type="range" min="420" max="700" step="5" value="675">
+    <span class="val" id="vFar">675</span></span>
   <button class="chip" id="cTrace" aria-pressed="true">Trace</button>
   <button class="chip" id="cSweep" aria-pressed="false">Sweep</button>
-  <button class="chip" id="cCS" aria-pressed="false">Cross-slit</button>
+  <button class="chip" id="cGl" aria-pressed="true">Glide</button>
+  <button class="chip" id="cCS" aria-pressed="true">Cross-slit</button>
   <button class="chip" id="cPin" aria-pressed="false">Pinhole</button>
   <button class="chip" id="cAxes" aria-pressed="true">Axes</button>
   <button class="chip" id="cLab" aria-pressed="true">Labels</button>
@@ -76,22 +77,23 @@
 <script>
 /* ============================================================
    GlideMath — closed forms, exposed for the headless check
-   (smoke_glide_board.js). Rig convention identical to sheet 35:
-   screen plane z = c; red slit l1 vertical at z = Zv; blue slit
-   l2 horizontal at z = Zh; scene beyond both slits.
+   (smoke_glide_board.js). Rig convention as sheet 35: red slit
+   l1 vertical at z = Zv; blue slit l2 horizontal at z = Zh;
+   scene beyond both slits. The picture plane is carried on the
+   volume: c = near, so the front face lies IN the plane and both
+   readings anchor there at true size.
 
-   Sheet 35 (cross-slit, rays):  X = x(c-Zv)/(z-Zv), Y = y(c-Zh)/(z-Zh)
-   Sheet 35·G (glide, edges):    X = x(z-Zv)/(c-Zv), Y = y(z-Zh)/(c-Zh)
+   Cross-slit (rays):   X = x(c-Zv)/(z-Zv),      Y = y(c-Zh)/(z-Zh)
+   Glide (armature):    X = x(2c-Zv-z)/(c-Zv),   Y = y(2c-Zh-z)/(c-Zh)
 
-   On this sheet the picture plane is carried on the volume: c = near
-   always, so the screen contains the front face and the image anchors
-   there at true size, spreading with depth beyond it.
-
-   Reciprocal gauges: Xg·Xcs = x², Yg·Ycs = y². The glide factor is
-   linear in z, so every depth line is straight and its graduation
-   affine; extended, it anchors on the true footprint at z = c,
-   crosses the vertical image axis at z = Zv and the horizontal
-   image axis at z = Zh.
+   The glide gauge is the cross-slit's slits MIRRORED across the
+   common picture plane, so nothing constructs forward of the
+   plane: depth reads linearly inward along straight lines that
+   are TANGENT to the curved cross-slit depth lines at the anchor
+   (coordination invariant Xg/x + x/Xcs = 2 at every depth).
+   Same-y armature lines concur at v1/v2 on the vertical axis at
+   z = 2c-Zv; same-x lines at h1/h2 on the horizontal axis at
+   z = 2c-Zh — each pair rests on a vanishing line.
    ============================================================ */
 /* GLIDE-MATH-BEGIN */
 (function(){
@@ -100,18 +102,18 @@
              Y: P.y * (c - Zh) / (P.z - Zh) };
   }
   function glide(P, c, Zv, Zh){
-    return { X: P.x * (P.z - Zv) / (c - Zv),
-             Y: P.y * (P.z - Zh) / (c - Zh) };
+    return { X: P.x * (2*c - Zv - P.z) / (c - Zv),
+             Y: P.y * (2*c - Zh - P.z) / (c - Zh) };
   }
   function crossRatio(A,B,C,D){ return ((C-A)*(D-B))/((C-B)*(D-A)); }
-  function rowCross(y, c, Zv, Zh){   /* same-y lines meet here on X=0 */
-    return { z: Zv, Y: y*(Zv-Zh)/(c-Zh) };
+  function vPoint(y, c, Zv, Zh){  /* same-y armature lines meet here on X=0 */
+    return { z: 2*c - Zv, Y: y*(Zv-Zh)/(c-Zh) };
   }
-  function colCross(x, c, Zv, Zh){   /* same-x lines meet here on Y=0 */
-    return { z: Zh, X: x*(Zh-Zv)/(c-Zv) };
+  function hPoint(x, c, Zv, Zh){  /* same-x armature lines meet here on Y=0 */
+    return { z: 2*c - Zh, X: x*(Zh-Zv)/(c-Zv) };
   }
   var GM = { project:project, glide:glide, crossRatio:crossRatio,
-             rowCross:rowCross, colCross:colCross };
+             vPoint:vPoint, hPoint:hPoint };
   if (typeof window !== 'undefined') window.GlideMath = GM;
   if (typeof module !== 'undefined' && module.exports) module.exports = GM;
 })();
@@ -122,29 +124,33 @@ if (typeof document === 'undefined') return;
 
 /* ---------------- palette (matches Kevin's sheets) ---------------- */
 var INK='#22201c', RED='#c8352b', BLUE='#1f4fd8', YEL='#d99e14',
-    PUR='#7a3fa8', ORG='#e07020', PAPER='#f3efe4';
+    PUR='#7a3fa8', ORG='#e07020', TEA='#177f75', PAPER='#f3efe4';
 var inkA=function(a){return 'rgba(34,32,28,'+a+')';};
 var redA=function(a){return 'rgba(200,53,43,'+a+')';};
 var bluA=function(a){return 'rgba(31,79,216,'+a+')';};
 var purA=function(a){return 'rgba(122,63,168,'+a+')';};
+var teaA=function(a){return 'rgba(23,127,117,'+a+')';};
 
 /* ---------------- state ---------------- */
 var S = {
-  Zv:150, Zh:250, c:360,          /* c is slaved to near */
-  near:360, far:660, halfW:100, halfH:50,
-  trace:{x:100, y:50, z:470},
+  Zv:103, Zh:250, c:435,          /* c is slaved to near */
+  near:435, far:675, halfW:100, halfH:50,
+  trace:{x:100, y:50, z:560},
   showTrace:true, sweep:false, sweepU:0, sweepDone:false,
-  showCS:false, showPin:false, showAxes:true, showLab:true, showGrid:true
+  showGl:true, showCS:true, showPin:false,
+  showAxes:true, showLab:true, showGrid:true
 };
 var reduceMotion = window.matchMedia &&
   window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /* ---------------- projection helpers ---------------- */
 var GM = window.GlideMath;
-function proj(P){ return GM.project(P, S.c, S.Zv, S.Zh); }   /* sheet-35 ghost */
-function glid(P){ return GM.glide(P, S.c, S.Zv, S.Zh); }     /* this sheet    */
+function proj(P){ return GM.project(P, S.c, S.Zv, S.Zh); }   /* cross-slit    */
+function glid(P){ return GM.glide(P, S.c, S.Zv, S.Zh); }     /* glide armature*/
 function glidPin(P){ var Zp=(S.Zv+S.Zh)/2;
-  var m=(P.z-Zp)/(S.c-Zp); return {X:P.x*m, Y:P.y*m}; }
+  var m=(2*S.c-Zp-P.z)/(S.c-Zp); return {X:P.x*m, Y:P.y*m}; }
+function zvM(){ return 2*S.c-S.Zv; }   /* red slit mirrored across the plane  */
+function zhM(){ return 2*S.c-S.Zh; }   /* blue slit mirrored across the plane */
 function depthLine(fn,x,y,z0,z1,N){
   var out=[], i, z;
   for(i=0;i<N;i++){ z=z0+(z1-z0)*i/(N-1); out.push(fn({x:x,y:y,z:z})); }
@@ -152,30 +158,31 @@ function depthLine(fn,x,y,z0,z1,N){
 }
 
 /* ---------------- sheet layout ----------------
-   world extents x in [-300,300] (image column shared with plan),
-   y in [-250,250], z in [-60,720]. Uniform scale k; quadrants share
-   the interior junction so the 45-degree transfer is exact.        */
+   world extents: x in [-150,150], y in [-150,150], z in [-60,840]
+   (the mirrored slits sit deep behind the plane, so the plan runs
+   tall). Uniform scale k; quadrants share the interior junction so
+   the 45-degree transfer is exact.                                 */
 var cv=document.getElementById('sheet'), ctx=cv.getContext('2d');
 if(!ctx) return;
 var dpr=1, L={};   /* layout cache */
 function layout(){
   var wrap=document.getElementById('sheetwrap');
   var cw=wrap.clientWidth-20, ch=wrap.clientHeight-20;
-  if(cw<100||ch<100){ cw=1104; ch=1024; }   /* headless / zero-layout guard */
+  if(cw<100||ch<100){ cw=960; ch=960; }   /* headless / zero-layout guard */
   dpr=Math.min(window.devicePixelRatio||1,3);
-  var k=Math.min(cw/1380, ch/1280);
-  var W=1380*k, H=1280*k;
+  var k=Math.min(cw/1200, ch/1200);
+  var W=1200*k, H=1200*k;
   cv.width=Math.round(W*dpr); cv.height=Math.round(H*dpr);
   cv.style.width=W+'px'; cv.style.height=H+'px';
   ctx.setTransform(dpr,0,0,dpr,0,0);
   L.k=k;
-  L.colX = 600*k;            /* junction x (plan|transfer, constr|side) */
-  L.rowY = 780*k;            /* junction y (top row | bottom row)       */
+  L.colX = 300*k;            /* junction x (plan|transfer, constr|side) */
+  L.rowY = 900*k;            /* junction y (top row | bottom row)       */
   L.W=W; L.H=H;
-  L.fx  = function(x){ return (x+300)*k; };            /* plan x, image X */
+  L.fx  = function(x){ return (x+150)*k; };            /* plan x, image X */
   L.fzP = function(z){ return L.rowY-(z+60)*k; };      /* plan z (up)     */
   L.fzS = function(z){ return L.colX+(z+60)*k; };      /* side z (right)  */
-  L.fy  = function(y){ return L.rowY+(250-y)*k; };     /* side y, image Y */
+  L.fy  = function(y){ return L.rowY+(150-y)*k; };     /* side y, image Y */
 }
 
 /* ---------------- drawing primitives ---------------- */
@@ -201,17 +208,17 @@ function dot(x,y,r,col,hollow){
   else { ctx.fillStyle=col; ctx.fill(); }
   ctx.restore();
 }
-function text(str,x,y,size,col,align){
-  ctx.save(); ctx.fillStyle=col||INK;
-  ctx.font=(size||10)+'px "Avenir Next","Futura","Century Gothic",sans-serif';
-  ctx.textAlign=align||'left'; ctx.textBaseline='alphabetic';
-  ctx.fillText(str,x,y); ctx.restore();
-}
 function cap(str,x,y,size,col,align){ /* tracked small caps */
   ctx.save(); ctx.fillStyle=col||inkA(.62);
   ctx.font='600 '+(size||9)+'px "Avenir Next","Futura","Century Gothic",sans-serif';
   ctx.textAlign=align||'left';
   ctx.fillText(str.toUpperCase().split('').join('\u2009'),x,y); ctx.restore();
+}
+function lab(str,x,y,size,col,align){ /* mixed-case point label */
+  ctx.save(); ctx.fillStyle=col||INK;
+  ctx.font='600 '+(size||10)+'px "Avenir Next","Futura",sans-serif';
+  ctx.textAlign=align||'left';
+  ctx.fillText(str,x,y); ctx.restore();
 }
 function clipRect(x,y,w,h){ ctx.save(); ctx.beginPath();
   ctx.rect(x,y,w,h); ctx.clip(); }
@@ -232,8 +239,8 @@ function draw(){
   line(L.colX,6,L.colX,L.H-6,inkA(.18),1);
 
   /* 45-degree transfer diagonal */
-  line(L.colX,L.rowY, L.colX+774*k, L.rowY-774*k, inkA(.5),1);
-  cap('45\u00b0 transfer', L.colX+16, L.rowY-756*k+18, 9, inkA(.45));
+  line(L.colX,L.rowY, L.colX+880*k, L.rowY-880*k, inkA(.5),1);
+  cap('45\u00b0 transfer', L.colX+16, L.rowY-862*k+18, 9, inkA(.45));
 
   drawPlan(); drawSide(); drawConstruction();
 
@@ -263,19 +270,25 @@ function drawPlan(){
   }
 
   /* ghost normal: the z-axis */
-  if(S.showAxes) line(fx(0),fz(-40),fx(0),fz(S.far+30),purA(.5),1,[2,5]);
+  if(S.showAxes) line(fx(0),fz(-40),fx(0),fz(zvM()+40),purA(.5),1,[2,5]);
 
-  /* glide projectors: each footprint on the screen casts a graduated
-     ray through the red slit point, out into the scene — the mark for
-     footprint x at depth z sits ON this ray at depth z.              */
-  var feet = S.showGrid ? [-S.halfW,-S.halfW/2,S.halfW/2,S.halfW]
-                        : [-S.halfW,S.halfW], i;
-  for(i=0;i<feet.length;i++){
-    var x0=feet[i], zT=S.far+30;
-    var xe = x0*(zT-S.Zv)/(S.c-S.Zv);
-    line(fx(0),fz(S.Zv),fx(xe),fz(zT),redA(.3),.8);
-    if(S.showGrid) for(z=S.near;z<=S.far+1;z+=60)
-      dot(fx(x0*(z-S.Zv)/(S.c-S.Zv)),fz(z),1.4,redA(.55));
+  /* cross-slit sight pencil: room corners -> red slit point */
+  var xs=[-S.halfW,S.halfW], zs=[S.near,S.far], i, j;
+  if(S.showCS) for(i=0;i<2;i++) for(j=0;j<2;j++)
+    line(fx(xs[i]),fz(zs[j]),fx(0),fz(S.Zv),redA(.3),.8);
+
+  /* glide armature: front-face footprints -> mirrored red slit,
+     entirely behind the picture plane                            */
+  if(S.showGl){
+    var feet = S.showGrid ? [-S.halfW,-S.halfW/2,S.halfW/2,S.halfW]
+                          : [-S.halfW,S.halfW];
+    for(i=0;i<feet.length;i++){
+      line(fx(feet[i]),fz(S.c),fx(0),fz(zvM()),teaA(.4),.8);
+      if(S.showGrid) for(z=S.near;z<=S.far+1;z+=60)
+        dot(fx(feet[i]*(zvM()-z)/(zvM()-S.c)),fz(z),1.4,teaA(.6));
+    }
+    dot(fx(0),fz(zvM()),4.2,RED,true);
+    cap('red slit \u00b7 mirrored', fx(8), fz(zvM())+3, 8, RED);
   }
 
   /* blue slit edge-on, red slit as point */
@@ -284,15 +297,16 @@ function drawPlan(){
   dot(fx(0),fz(S.Zv),4.6,RED);
   cap('point view of red slit', fx(8), fz(S.Zv)+13, 8, RED);
 
-  /* pinhole comparison eye */
-  if(S.showPin) dot(fx(0),fz((S.Zv+S.Zh)/2),3.6,ORG,true);
+  /* pinhole comparison eye + its mirror */
+  if(S.showPin){ dot(fx(0),fz((S.Zv+S.Zh)/2),3.6,ORG,true);
+    dot(fx(0),fz(2*S.c-(S.Zv+S.Zh)/2),3.6,ORG,true); }
   ctx.restore();
 }
 
 /* ---- SIDE (bottom-right): z rightward, y upward ---- */
 function drawSide(){
   clipRect(L.colX+1,L.rowY+1,L.W-L.colX-7,L.H-L.rowY-7);
-  var fz=L.fzS, fy=L.fy;
+  var fz=L.fzS, fy=L.fy, i, z;
   cap('side view \u2014 elevation', L.W-14, L.rowY+22, 9, inkA(.62),'right');
 
   line(fz(S.c),L.rowY+8,fz(S.c),L.H-10,YEL,2.4);
@@ -300,7 +314,7 @@ function drawSide(){
 
   ctx.strokeStyle=inkA(.85); ctx.lineWidth=1.1;
   ctx.strokeRect(fz(S.near),fy(S.halfH),fz(S.far)-fz(S.near),fy(-S.halfH)-fy(S.halfH));
-  var yg,z,i;
+  var yg;
   if(S.showGrid){
     for(yg=-S.halfH;yg<=S.halfH;yg+=50)
       line(fz(S.near),fy(yg),fz(S.far),fy(yg),inkA(.3),.7);
@@ -309,18 +323,25 @@ function drawSide(){
   }
 
   if(S.showAxes){
-    line(fz(-40),fy(0),fz(S.far+30),fy(0),purA(.5),1,[2,5]);
+    line(fz(-40),fy(0),fz(zhM()+40),fy(0),purA(.5),1,[2,5]);
     cap('ghost normal', fz(S.far-90), fy(0)-6, 8, PUR);
   }
 
-  /* glide projectors through the blue slit point */
-  var feet = [-S.halfH,S.halfH];
-  for(i=0;i<feet.length;i++){
-    var y0=feet[i], zT=S.far+30;
-    var ye = y0*(zT-S.Zh)/(S.c-S.Zh);
-    line(fz(S.Zh),fy(0),fz(zT),fy(ye),bluA(.3),.8);
-    if(S.showGrid) for(z=S.near;z<=S.far+1;z+=60)
-      dot(fz(z),fy(y0*(z-S.Zh)/(S.c-S.Zh)),1.4,bluA(.55));
+  /* cross-slit sight pencil: room corners -> blue slit point */
+  var ys=[-S.halfH,S.halfH], zsS=[S.near,S.far], jj;
+  if(S.showCS) for(i=0;i<2;i++) for(jj=0;jj<2;jj++)
+    line(fz(zsS[jj]),fy(ys[i]),fz(S.Zh),fy(0),bluA(.3),.8);
+
+  /* glide armature: footprints -> mirrored blue slit */
+  if(S.showGl){
+    var feet=[-S.halfH,S.halfH];
+    for(i=0;i<feet.length;i++){
+      line(fz(S.c),fy(feet[i]),fz(zhM()),fy(0),teaA(.4),.8);
+      if(S.showGrid) for(z=S.near;z<=S.far+1;z+=60)
+        dot(fz(z),fy(feet[i]*(zhM()-z)/(zhM()-S.c)),1.4,teaA(.6));
+    }
+    dot(fz(zhM()),fy(0),4.2,BLUE,true);
+    cap('blue slit \u00b7 mirrored', fz(zhM())-6, fy(-12)+3, 8, BLUE,'right');
   }
 
   line(fz(S.Zv),fy(-62),fz(S.Zv),fy(62),RED,3);
@@ -328,151 +349,181 @@ function drawSide(){
   dot(fz(S.Zh),fy(0),4.6,BLUE);
   cap('point view of blue slit', fz(S.Zh)+8, fy(-10)+3, 8, BLUE);
 
-  if(S.showPin) dot(fz((S.Zv+S.Zh)/2),fy(0),3.6,ORG,true);
+  if(S.showPin){ dot(fz((S.Zv+S.Zh)/2),fy(0),3.6,ORG,true);
+    dot(fz(2*S.c-(S.Zv+S.Zh)/2),fy(0),3.6,ORG,true); }
   ctx.restore();
 }
 
-/* ---- CONSTRUCTION (bottom-left): the glide image ---- */
+/* ---- CONSTRUCTION (bottom-left): front view ----
+   The cross-slit projection and its glide armature share the
+   picture plane and anchor on the front face at true size.
+   Toggle GLIDE / CROSS-SLIT in the tray to read either alone.  */
 function drawConstruction(){
   clipRect(6,L.rowY+1,L.colX-6,L.H-L.rowY-7);
   var fx=L.fx, fy=L.fy, i, xg, yg, z;
-  cap('construction \u00b7 glide projection', 14, L.H-14, 9);
+  cap('front view \u00b7 construction', 14, L.H-14, 9);
 
-  /* the picture plane holds the front face, so the near station IS the
-     true section \u2014 the image anchors there at true size. Each depth
-     line extended backward crosses the horizontal axis at z = Zh and
-     the vertical axis at z = Zv on its way to the slits.             */
-  cap('front face on the picture plane \u00b7 true size', fx(-S.halfW), fy(S.halfH)-8, 7.5, inkA(.5));
-  corners().forEach(function(cn){
-    var a=glid({x:cn.x,y:cn.y,z:S.near}), b=glid({x:cn.x,y:cn.y,z:S.Zv});
-    line(fx(a.X),fy(a.Y),fx(b.X),fy(b.Y),inkA(.28),.8,[2,4]);
-  });
-
-  /* stations: rectangles at every depth (separable scaling) */
-  for(z=S.near; z<=S.far+1; z+=60){
-    var a=glid({x:-S.halfW,y: S.halfH,z:z}), b=glid({x:S.halfW,y:-S.halfH,z:z});
-    ctx.strokeStyle=inkA(z===S.near||z>S.far-1?.85:.4);
-    ctx.lineWidth=(z===S.near||z>S.far-1)?1.2:.7;
-    ctx.strokeRect(fx(a.X),fy(a.Y),fx(b.X)-fx(a.X),fy(b.Y)-fy(a.Y));
-  }
-  /* longitudinal grid: sampled like sheet 35 — comes out straight */
   var N=48, sweepFrac = S.sweep||S.sweepDone ? S.sweepU : 1;
-  if(S.showGrid){
-    for(xg=-S.halfW;xg<=S.halfW;xg+=50) for(i=0;i<2;i++){
-      var cA=depthLine(glid, xg, i? S.halfH:-S.halfH, S.near,S.far,N)
-        .map(function(p){return [fx(p.X),fy(p.Y)];});
-      poly(cA,inkA(.35),.7);
-    }
-    for(yg=-S.halfH+50; yg<=S.halfH-50+1; yg+=50) for(i=0;i<2;i++){
-      var cB=depthLine(glid, i? S.halfW:-S.halfW, yg, S.near,S.far,N)
-        .map(function(p){return [fx(p.X),fy(p.Y)];});
-      poly(cB,inkA(.35),.7);
-    }
-  }
-  /* four corner depth lines — the signature strokes, straight */
-  corners().forEach(function(cn){
-    var pts=depthLine(glid,cn.x,cn.y,S.near,S.far,N)
-      .map(function(p){return [fx(p.X),fy(p.Y)];});
-    if(sweepFrac<1) poly(pts,inkA(.18),1.6);          /* pencil-in */
-    var tip=poly(pts,INK,1.7,null,sweepFrac);          /* ink pass  */
-    if(S.sweep && sweepFrac<1) dot(tip[0],tip[1],2.6,INK);
-  });
 
-  /* cross-slit ghost: sheet 35's curved image of the same tube */
+  /* vanishing lines: the two image axes */
+  if(S.showAxes){
+    line(fx(0),L.rowY+8,fx(0),L.H-10,purA(.55),1,[2,5]);
+    line(10,fy(0),L.colX-10,fy(0),purA(.55),1,[2,5]);
+    cap('vanishing line', fx(0)+6, L.rowY+22, 7.5, purA(.8));
+    cap('vanishing line', L.colX-14, fy(0)-6, 7.5, purA(.8), 'right');
+  }
+
+  /* ---- cross-slit reading: curved depth lines toward A ---- */
   if(S.showCS){
+    for(z=S.near+60; z<=S.far+1; z+=60){
+      var qa=proj({x:-S.halfW,y: S.halfH,z:z}), qb=proj({x:S.halfW,y:-S.halfH,z:z});
+      ctx.save(); ctx.strokeStyle=purA(z>S.far-1?.7:.35);
+      ctx.lineWidth=(z>S.far-1)?1.1:.7;
+      ctx.strokeRect(fx(qa.X),fy(qa.Y),fx(qb.X)-fx(qa.X),fy(qb.Y)-fy(qa.Y));
+      ctx.restore();
+    }
+    if(S.showGrid){
+      for(xg=-S.halfW;xg<=S.halfW;xg+=50) for(i=0;i<2;i++)
+        poly(depthLine(proj, xg, i? S.halfH:-S.halfH, S.near,S.far,N)
+          .map(function(p){return [fx(p.X),fy(p.Y)];}), purA(.3),.7);
+      for(yg=-S.halfH+50; yg<=S.halfH-50+1; yg+=50) for(i=0;i<2;i++)
+        poly(depthLine(proj, i? S.halfW:-S.halfW, yg, S.near,S.far,N)
+          .map(function(p){return [fx(p.X),fy(p.Y)];}), purA(.3),.7);
+    }
     corners().forEach(function(cn){
       var pts=depthLine(proj,cn.x,cn.y,S.near,S.far,N)
         .map(function(p){return [fx(p.X),fy(p.Y)];});
-      poly(pts,purA(.75),1.2);
+      if(sweepFrac<1) poly(pts,purA(.25),1.5);
+      var tip=poly(pts,PUR,1.5,null,sweepFrac);
+      if(S.sweep && sweepFrac<1) dot(tip[0],tip[1],2.4,PUR);
     });
-    [S.far].forEach(function(zz){
-      var pa=proj({x:-S.halfW,y:S.halfH,z:zz}), pb=proj({x:S.halfW,y:-S.halfH,z:zz});
-      ctx.save(); ctx.strokeStyle=purA(.6); ctx.lineWidth=.9; ctx.setLineDash([4,3]);
-      ctx.strokeRect(fx(pa.X),fy(pa.Y),fx(pb.X)-fx(pa.X),fy(pb.Y)-fy(pa.Y));
-      ctx.restore();
-    });
-    cap('cross-slit \u00b7 sheet 35 \u00b7 curved', 14, L.rowY+22, 8, PUR);
+    dot(fx(0),fy(0),2.8,PUR);
+    lab('A', fx(0)+6, fy(0)+13, 10, PUR);
+    cap('curved depth lines run to A', 14, L.rowY+22, 8, PUR);
   }
 
-  /* pinhole comparison: slits fused, the fan closes on one point */
+  /* ---- glide reading: straight armature toward v1 v2 h1 h2 ---- */
+  if(S.showGl){
+    /* full armature lines, corner through both vanishing points */
+    var zEnd=Math.max(zvM(),zhM())+ (zvM()-S.c)*0.25;
+    corners().forEach(function(cn){
+      var a=glid({x:cn.x,y:cn.y,z:S.c}), b=glid({x:cn.x,y:cn.y,z:zEnd});
+      line(fx(a.X),fy(a.Y),fx(b.X),fy(b.Y),teaA(.35),.8,[2,4]);
+    });
+    /* stations */
+    for(z=S.near+60; z<=S.far+1; z+=60){
+      var ga=glid({x:-S.halfW,y: S.halfH,z:z}), gb=glid({x:S.halfW,y:-S.halfH,z:z});
+      ctx.save(); ctx.strokeStyle=teaA(z>S.far-1?.75:.35);
+      ctx.lineWidth=(z>S.far-1)?1.1:.7;
+      ctx.strokeRect(fx(ga.X),fy(ga.Y),fx(gb.X)-fx(ga.X),fy(gb.Y)-fy(ga.Y));
+      ctx.restore();
+    }
+    if(S.showGrid){
+      for(xg=-S.halfW;xg<=S.halfW;xg+=50) for(i=0;i<2;i++)
+        poly(depthLine(glid, xg, i? S.halfH:-S.halfH, S.near,S.far,N)
+          .map(function(p){return [fx(p.X),fy(p.Y)];}), teaA(.3),.7);
+      for(yg=-S.halfH+50; yg<=S.halfH-50+1; yg+=50) for(i=0;i<2;i++)
+        poly(depthLine(glid, i? S.halfW:-S.halfW, yg, S.near,S.far,N)
+          .map(function(p){return [fx(p.X),fy(p.Y)];}), teaA(.3),.7);
+    }
+    /* the inked depth strokes over the volume itself */
+    corners().forEach(function(cn){
+      var pts=depthLine(glid,cn.x,cn.y,S.near,S.far,N)
+        .map(function(p){return [fx(p.X),fy(p.Y)];});
+      if(sweepFrac<1) poly(pts,teaA(.25),1.7);
+      var tip=poly(pts,TEA,1.7,null,sweepFrac);
+      if(S.sweep && sweepFrac<1) dot(tip[0],tip[1],2.6,TEA);
+    });
+    /* vanishing pairs: v1/v2 on the vertical line at z = 2c-Zv,
+       h1/h2 on the horizontal line at z = 2c-Zh                 */
+    [ S.halfH,-S.halfH].forEach(function(y){
+      var v=GM.vPoint(y,S.c,S.Zv,S.Zh);
+      dot(fx(0),fy(v.Y),2.8,RED);
+      lab(v.Y>0?'v2':'v1', fx(0)-7, fy(v.Y)+(v.Y>0?-6:14), 10, RED, 'right');
+    });
+    [ S.halfW,-S.halfW].forEach(function(x){
+      var h=GM.hPoint(x,S.c,S.Zv,S.Zh);
+      dot(fx(h.X),fy(0),2.8,BLUE);
+      lab(h.X>0?'h1':'h2', fx(h.X)+(h.X>0?7:-7), fy(0)-7, 10, BLUE, h.X>0?'left':'right');
+    });
+    cap('straight depth lines \u00b7 v pair at z = 2c\u2212Zv \u00b7 h pair at z = 2c\u2212Zh',
+        14, L.rowY+34, 8, TEA);
+  }
+
+  /* pinhole comparison: slits fused and mirrored — one-point glide */
   if(S.showPin){
     corners().forEach(function(cn){
       var a=glidPin({x:cn.x,y:cn.y,z:S.near}), b=glidPin({x:cn.x,y:cn.y,z:S.far});
       line(fx(a.X),fy(a.Y),fx(b.X),fy(b.Y),ORG,1.2);
     });
-    var pa=glidPin({x:-S.halfW,y:S.halfH,z:S.near}),
-        pb=glidPin({x:S.halfW,y:-S.halfH,z:S.near});
+    var pa=glidPin({x:-S.halfW,y:S.halfH,z:S.far}),
+        pb=glidPin({x:S.halfW,y:-S.halfH,z:S.far});
     ctx.save(); ctx.strokeStyle=ORG; ctx.lineWidth=.9; ctx.setLineDash([4,3]);
     ctx.strokeRect(fx(pa.X),fy(pa.Y),fx(pb.X)-fx(pa.X),fy(pb.Y)-fy(pa.Y));
     ctx.restore();
-    cap('one-point glide \u00b7 slits fused at (Zv+Zh)/2', 14, L.rowY+34, 8, ORG);
+    cap('one-point glide \u00b7 slits fused + mirrored', 14, L.rowY+46, 8, ORG);
   }
 
-  /* the two vanishing axes with their concurrence marks:
-     same-y depth lines cross the vertical axis at z = Zv (red slit depth);
-     same-x depth lines cross the horizontal axis at z = Zh (blue).      */
-  if(S.showAxes){
-    line(fx(0),L.rowY+8,fx(0),L.H-10,purA(.55),1,[2,5]);
-    line(10,fy(0),L.colX-10,fy(0),purA(.55),1,[2,5]);
-    dot(fx(0),fy(0),2.6,PUR);
-    [-S.halfH,S.halfH].forEach(function(y){
-      var r=GM.rowCross(y,S.c,S.Zv,S.Zh);
-      dot(fx(0),fy(r.Y),2.6,RED);
-    });
-    [-S.halfW,S.halfW].forEach(function(x){
-      var cc=GM.colCross(x,S.c,S.Zv,S.Zh);
-      dot(fx(cc.X),fy(0),2.6,BLUE);
-    });
-    var rr=GM.rowCross(S.halfH,S.c,S.Zv,S.Zh);
-    cap('rows cross \u00b7 z = Zv', fx(6), fy(rr.Y)-6, 8, RED);
-    var c2=GM.colCross(S.halfW,S.c,S.Zv,S.Zh);
-    cap('columns cross \u00b7 z = Zh', fx(c2.X)+7, fy(0)+14, 8, BLUE);
-  }
+  /* the shared anchor: front face at true size, in ink, on top */
+  ctx.strokeStyle=inkA(.9); ctx.lineWidth=1.4;
+  ctx.strokeRect(fx(-S.halfW),fy(S.halfH),
+                 fx(S.halfW)-fx(-S.halfW),fy(-S.halfH)-fy(S.halfH));
+  cap('front face on the picture plane \u00b7 true size', fx(-S.halfW), fy(S.halfH)-8, 7.5, inkA(.55));
 
-  /* A_ij address labels, colored subscripts (red = vertical index,
-     blue = horizontal index), following the page-12 convention   */
+  /* A_ij address labels on the shared anchor, colored subscripts */
   if(S.showLab) corners().forEach(function(cn){
-    var p=glid({x:cn.x,y:cn.y,z:S.near});
-    var ix = p.X>0 ? '2':'1', iy = p.Y>0 ? '2':'1';
-    var lx=fx(p.X)+(p.X>0? 6:-6), ly=fy(p.Y)+(p.Y>0? -8:16);
+    var ix = cn.x>0 ? '2':'1', iy = cn.y>0 ? '2':'1';
+    var lx=fx(cn.x)+(cn.x>0? 6:-6), ly=fy(cn.y)+(cn.y>0? -8:16);
     ctx.save();
-    ctx.textAlign = p.X>0?'left':'right';
     ctx.font='600 12px "Avenir Next","Futura",sans-serif';
     ctx.fillStyle=INK;
-    var ax = lx + (p.X>0?0:-14);
+    var ax = lx + (cn.x>0?0:-14);
     ctx.fillText('A', ax, ly);
     ctx.font='600 8.5px "Avenir Next","Futura",sans-serif';
-    ctx.fillStyle=RED;  ctx.textAlign='left'; ctx.fillText(iy, ax+9, ly+3);
+    ctx.fillStyle=RED;  ctx.fillText(iy, ax+9, ly+3);
     ctx.fillStyle=BLUE; ctx.fillText(ix, ax+14, ly+3);
     ctx.restore();
   });
 
-  cap('each footprint casts a graduated projector through its slit \u00b7 depth reads linearly along the stroke',
+  cap('common picture plane \u00b7 armature tangent to the curved projection at the anchor \u00b7 nothing forward of the plane',
       14, L.H-28, 7.5, inkA(.55));
   ctx.restore();
 }
 
-/* ---- TRACE: the full four-quadrant construction for one point ---- */
+/* ---- TRACE: the four-quadrant construction for one point,
+        in whichever readings are switched on                 ---- */
 function drawTrace(){
   var t=S.trace, fx=L.fx, fzP=L.fzP, fzS=L.fzS, fy=L.fy;
-  var p=glid(t);
-  /* plan: orthographic drop to the footprint on the front face, then
-     the projector from the red slit through the footprint, read at z */
+  /* shared: orthographic drops to the footprints on the plane */
   line(fx(t.x),fzP(t.z),fx(t.x),fzP(S.c),inkA(.5),1,[5,4]);
   dot(fx(t.x),fzP(S.c),2.4,YEL); dot(fx(t.x),fzP(S.c),1.1,INK);
-  line(fx(0),fzP(S.Zv),fx(p.X),fzP(t.z),RED,1.5);
-  dot(fx(p.X),fzP(t.z),2.4,RED);
-  /* side: same, through the blue slit */
   line(fzS(t.z),fy(t.y),fzS(S.c),fy(t.y),inkA(.5),1,[5,4]);
   dot(fzS(S.c),fy(t.y),2.4,YEL); dot(fzS(S.c),fy(t.y),1.1,INK);
-  line(fzS(S.Zh),fy(0),fzS(t.z),fy(p.Y),BLUE,1.5);
-  dot(fzS(t.z),fy(p.Y),2.4,BLUE);
-  /* drop + carry into the construction */
-  line(fx(p.X),fzP(t.z),fx(p.X),fy(p.Y),inkA(.55),1,[5,4]);
-  line(fzS(t.z),fy(p.Y),fx(p.X),fy(p.Y),inkA(.55),1,[5,4]);
-  dot(fx(p.X),fy(p.Y),3.4,INK);
-  line(fx(p.X)-8,fy(p.Y),fx(p.X)+8,fy(p.Y),INK,.8);
-  line(fx(p.X),fy(p.Y)-8,fx(p.X),fy(p.Y)+8,INK,.8);
+
+  if(S.showGl){                                /* glide reading  */
+    var g=glid(t);
+    line(fx(t.x),fzP(S.c),fx(0),fzP(zvM()),teaA(.9),1.5);
+    dot(fx(g.X),fzP(t.z),2.4,TEA);
+    line(fzS(S.c),fy(t.y),fzS(zhM()),fy(0),teaA(.9),1.5);
+    dot(fzS(t.z),fy(g.Y),2.4,TEA);
+    line(fx(g.X),fzP(t.z),fx(g.X),fy(g.Y),teaA(.6),1,[5,4]);
+    line(fzS(t.z),fy(g.Y),fx(g.X),fy(g.Y),teaA(.6),1,[5,4]);
+    dot(fx(g.X),fy(g.Y),3.2,TEA);
+    line(fx(g.X)-8,fy(g.Y),fx(g.X)+8,fy(g.Y),TEA,.8);
+    line(fx(g.X),fy(g.Y)-8,fx(g.X),fy(g.Y)+8,TEA,.8);
+  }
+  if(S.showCS){                                /* cross-slit reading */
+    var q=proj(t);
+    line(fx(t.x),fzP(t.z),fx(0),fzP(S.Zv),redA(.85),1.3);
+    dot(fx(q.X),fzP(S.c),2.2,YEL); dot(fx(q.X),fzP(S.c),1,INK);
+    line(fzS(t.z),fy(t.y),fzS(S.Zh),fy(0),bluA(.85),1.3);
+    dot(fzS(S.c),fy(q.Y),2.2,YEL); dot(fzS(S.c),fy(q.Y),1,INK);
+    line(fx(q.X),fzP(S.c),fx(q.X),fy(q.Y),purA(.55),1,[5,4]);
+    line(fzS(S.c),fy(q.Y),fx(q.X),fy(q.Y),purA(.55),1,[5,4]);
+    dot(fx(q.X),fy(q.Y),3.2,PUR);
+    line(fx(q.X)-8,fy(q.Y),fx(q.X)+8,fy(q.Y),PUR,.8);
+    line(fx(q.X),fy(q.Y)-8,fx(q.X),fy(q.Y)+8,PUR,.8);
+  }
   /* 45-degree z transfer: plan point -> diagonal -> side point */
   line(fx(t.x),fzP(t.z),fzS(t.z),fzP(t.z),inkA(.35),1,[3,5]);
   line(fzS(t.z),fzP(t.z),fzS(t.z),fy(t.y),inkA(.35),1,[3,5]);
@@ -522,8 +573,8 @@ function clampAll(){
   S.trace.y=Math.min(Math.max(S.trace.y,-S.halfH),S.halfH);
   syncSliders();
 }
-function invPlan(px,py){ return {x:px/L.k-300, z:(L.rowY-py)/L.k-60}; }
-function invSide(px,py){ return {z:(px-L.colX)/L.k-60, y:250-(py-L.rowY)/L.k}; }
+function invPlan(px,py){ return {x:px/L.k-150, z:(L.rowY-py)/L.k-60}; }
+function invSide(px,py){ return {z:(px-L.colX)/L.k-60, y:150-(py-L.rowY)/L.k}; }
 cv.addEventListener('pointerdown',function(e){
   var r=cv.getBoundingClientRect(), px=e.clientX-r.left, py=e.clientY-r.top;
   drag=hits(px,py);
@@ -565,9 +616,9 @@ function syncSliders(){
   $('sZh').min=(S.Zv+1).toFixed(0);
   $('sNear').value=S.near; $('vNear').textContent=S.near.toFixed(0);
   $('sFar').value=S.far;  $('vFar').textContent=S.far.toFixed(0);
-  var AR=GM.crossRatio(S.Zv,S.Zh,S.c,S.near);
-  $('readout').innerHTML='AR(near) <b>'+AR.toFixed(4)+
-    '</b> &nbsp; bow <b>'+bowDeviation(glid).toFixed(1)+' u</b>'+
+  var AR=GM.crossRatio(S.Zv,S.Zh,S.c,S.far);
+  $('readout').innerHTML='AR(far) <b>'+AR.toFixed(4)+
+    '</b> &nbsp; glide bow <b>'+bowDeviation(glid).toFixed(1)+' u</b>'+
     ' &nbsp; cross-slit bows <b>'+bowDeviation(proj).toFixed(1)+' u</b>';
 }
 function chip(id,key,cb){
@@ -575,7 +626,8 @@ function chip(id,key,cb){
     S[key]=!S[key]; this.setAttribute('aria-pressed',S[key]);
     if(cb)cb(); needsDraw=true; });
 }
-chip('cTrace','showTrace'); chip('cCS','showCS'); chip('cPin','showPin');
+chip('cTrace','showTrace'); chip('cGl','showGl'); chip('cCS','showCS');
+chip('cPin','showPin');
 chip('cAxes','showAxes');   chip('cLab','showLab'); chip('cGrid','showGrid');
 $('cSweep').addEventListener('click',function(){
   S.sweep=!S.sweep; this.setAttribute('aria-pressed',S.sweep);
