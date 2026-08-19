@@ -56,9 +56,6 @@
   <span class="ctl"><span class="lab">Zh&nbsp;blue</span>
     <input id="sZh" type="range" min="61" max="330" step="1" value="250">
     <span class="val" id="vZh">250</span></span>
-  <span class="ctl"><span class="lab">Screen</span>
-    <input id="sC" type="range" min="-50" max="300" step="1" value="0">
-    <span class="val" id="vC">0</span></span>
   <span class="ctl"><span class="lab">Near</span>
     <input id="sNear" type="range" min="340" max="640" step="5" value="360">
     <span class="val" id="vNear">360</span></span>
@@ -85,6 +82,10 @@
 
    Sheet 35 (cross-slit, rays):  X = x(c-Zv)/(z-Zv), Y = y(c-Zh)/(z-Zh)
    Sheet 35·G (glide, edges):    X = x(z-Zv)/(c-Zv), Y = y(z-Zh)/(c-Zh)
+
+   On this sheet the picture plane is carried on the volume: c = near
+   always, so the screen contains the front face and the image anchors
+   there at true size, spreading with depth beyond it.
 
    Reciprocal gauges: Xg·Xcs = x², Yg·Ycs = y². The glide factor is
    linear in z, so every depth line is straight and its graduation
@@ -129,7 +130,7 @@ var purA=function(a){return 'rgba(122,63,168,'+a+')';};
 
 /* ---------------- state ---------------- */
 var S = {
-  Zv:150, Zh:250, c:0,
+  Zv:150, Zh:250, c:360,          /* c is slaved to near */
   near:360, far:660, halfW:100, halfH:50,
   trace:{x:100, y:50, z:470},
   showTrace:true, sweep:false, sweepU:0, sweepDone:false,
@@ -151,9 +152,8 @@ function depthLine(fn,x,y,z0,z1,N){
 }
 
 /* ---------------- sheet layout ----------------
-   The glide image spreads with depth, so the paper is landscape:
-   world extents x in [-380,380] (image column shared with plan),
-   y in [-150,150], z in [-60,720]. Uniform scale k; quadrants share
+   world extents x in [-300,300] (image column shared with plan),
+   y in [-250,250], z in [-60,720]. Uniform scale k; quadrants share
    the interior junction so the 45-degree transfer is exact.        */
 var cv=document.getElementById('sheet'), ctx=cv.getContext('2d');
 if(!ctx) return;
@@ -161,21 +161,21 @@ var dpr=1, L={};   /* layout cache */
 function layout(){
   var wrap=document.getElementById('sheetwrap');
   var cw=wrap.clientWidth-20, ch=wrap.clientHeight-20;
-  if(cw<100||ch<100){ cw=1232; ch=864; }   /* headless / zero-layout guard */
+  if(cw<100||ch<100){ cw=1104; ch=1024; }   /* headless / zero-layout guard */
   dpr=Math.min(window.devicePixelRatio||1,3);
-  var k=Math.min(cw/1540, ch/1080);
-  var W=1540*k, H=1080*k;
+  var k=Math.min(cw/1380, ch/1280);
+  var W=1380*k, H=1280*k;
   cv.width=Math.round(W*dpr); cv.height=Math.round(H*dpr);
   cv.style.width=W+'px'; cv.style.height=H+'px';
   ctx.setTransform(dpr,0,0,dpr,0,0);
   L.k=k;
-  L.colX = 760*k;            /* junction x (plan|transfer, constr|side) */
+  L.colX = 600*k;            /* junction x (plan|transfer, constr|side) */
   L.rowY = 780*k;            /* junction y (top row | bottom row)       */
   L.W=W; L.H=H;
-  L.fx  = function(x){ return (x+380)*k; };            /* plan x, image X */
+  L.fx  = function(x){ return (x+300)*k; };            /* plan x, image X */
   L.fzP = function(z){ return L.rowY-(z+60)*k; };      /* plan z (up)     */
   L.fzS = function(z){ return L.colX+(z+60)*k; };      /* side z (right)  */
-  L.fy  = function(y){ return L.rowY+(150-y)*k; };     /* side y, image Y */
+  L.fy  = function(y){ return L.rowY+(250-y)*k; };     /* side y, image Y */
 }
 
 /* ---------------- drawing primitives ---------------- */
@@ -236,7 +236,6 @@ function draw(){
   cap('45\u00b0 transfer', L.colX+16, L.rowY-756*k+18, 9, inkA(.45));
 
   drawPlan(); drawSide(); drawConstruction();
-  drawTitleBlock();
 
   /* trace apparatus crosses quadrants — drawn unclipped, last */
   if(S.showTrace) drawTrace();
@@ -248,9 +247,9 @@ function drawPlan(){
   var fx=L.fx, fz=L.fzP;
   cap('plan \u2014 top view', 14, 24, 9);
 
-  /* picture plane */
+  /* picture plane, carried on the front face of the volume */
   line(10,fz(S.c),L.colX-10,fz(S.c),YEL,2.4);
-  cap('picture plane', 14, fz(S.c)-6, 8, YEL);
+  cap('picture plane \u00b7 front face', 14, fz(S.c)+13, 8, YEL);
 
   /* room footprint + x-grid + z-stations */
   var xg, z;
@@ -274,7 +273,7 @@ function drawPlan(){
   for(i=0;i<feet.length;i++){
     var x0=feet[i], zT=S.far+30;
     var xe = x0*(zT-S.Zv)/(S.c-S.Zv);
-    line(fx(x0),fz(S.c),fx(xe),fz(zT),redA(.3),.8);
+    line(fx(0),fz(S.Zv),fx(xe),fz(zT),redA(.3),.8);
     if(S.showGrid) for(z=S.near;z<=S.far+1;z+=60)
       dot(fx(x0*(z-S.Zv)/(S.c-S.Zv)),fz(z),1.4,redA(.55));
   }
@@ -297,7 +296,7 @@ function drawSide(){
   cap('side view \u2014 elevation', L.W-14, L.rowY+22, 9, inkA(.62),'right');
 
   line(fz(S.c),L.rowY+8,fz(S.c),L.H-10,YEL,2.4);
-  cap('picture plane', fz(S.c)+5, L.H-14, 8, YEL);
+  cap('picture plane \u00b7 front face', fz(S.c)-5, L.H-14, 8, YEL, 'right');
 
   ctx.strokeStyle=inkA(.85); ctx.lineWidth=1.1;
   ctx.strokeRect(fz(S.near),fy(S.halfH),fz(S.far)-fz(S.near),fy(-S.halfH)-fy(S.halfH));
@@ -319,7 +318,7 @@ function drawSide(){
   for(i=0;i<feet.length;i++){
     var y0=feet[i], zT=S.far+30;
     var ye = y0*(zT-S.Zh)/(S.c-S.Zh);
-    line(fz(S.c),fy(y0),fz(zT),fy(ye),bluA(.3),.8);
+    line(fz(S.Zh),fy(0),fz(zT),fy(ye),bluA(.3),.8);
     if(S.showGrid) for(z=S.near;z<=S.far+1;z+=60)
       dot(fz(z),fy(y0*(z-S.Zh)/(S.c-S.Zh)),1.4,bluA(.55));
   }
@@ -339,17 +338,14 @@ function drawConstruction(){
   var fx=L.fx, fy=L.fy, i, xg, yg, z;
   cap('construction \u00b7 glide projection', 14, L.H-14, 9);
 
-  /* footprint: the true section, where every extended depth line anchors */
-  ctx.save(); ctx.strokeStyle=inkA(.5); ctx.lineWidth=1; ctx.setLineDash([4,4]);
-  ctx.strokeRect(fx(-S.halfW),fy(S.halfH),
-                 fx(S.halfW)-fx(-S.halfW),fy(-S.halfH)-fy(S.halfH));
-  ctx.restore();
-  cap('footprint \u00b7 true section at z = screen', fx(-S.halfW), fy(S.halfH)-6, 7.5, inkA(.5));
-
-  /* projector anchors: footprint corner -> near corner (through both axes) */
+  /* the picture plane holds the front face, so the near station IS the
+     true section \u2014 the image anchors there at true size. Each depth
+     line extended backward crosses the horizontal axis at z = Zh and
+     the vertical axis at z = Zv on its way to the slits.             */
+  cap('front face on the picture plane \u00b7 true size', fx(-S.halfW), fy(S.halfH)-8, 7.5, inkA(.5));
   corners().forEach(function(cn){
-    var a=glid({x:cn.x,y:cn.y,z:S.near});
-    line(fx(cn.x),fy(cn.y),fx(a.X),fy(a.Y),inkA(.28),.8,[2,4]);
+    var a=glid({x:cn.x,y:cn.y,z:S.near}), b=glid({x:cn.x,y:cn.y,z:S.Zv});
+    line(fx(a.X),fy(a.Y),fx(b.X),fy(b.Y),inkA(.28),.8,[2,4]);
   });
 
   /* stations: rectangles at every depth (separable scaling) */
@@ -389,7 +385,7 @@ function drawConstruction(){
         .map(function(p){return [fx(p.X),fy(p.Y)];});
       poly(pts,purA(.75),1.2);
     });
-    [S.near,S.far].forEach(function(zz){
+    [S.far].forEach(function(zz){
       var pa=proj({x:-S.halfW,y:S.halfH,z:zz}), pb=proj({x:S.halfW,y:-S.halfH,z:zz});
       ctx.save(); ctx.strokeStyle=purA(.6); ctx.lineWidth=.9; ctx.setLineDash([4,3]);
       ctx.strokeRect(fx(pa.X),fy(pa.Y),fx(pb.X)-fx(pa.X),fy(pb.Y)-fy(pa.Y));
@@ -460,16 +456,16 @@ function drawConstruction(){
 function drawTrace(){
   var t=S.trace, fx=L.fx, fzP=L.fzP, fzS=L.fzS, fy=L.fy;
   var p=glid(t);
-  /* plan: orthographic drop to the footprint, then the projector
-     from the footprint through the red slit, read at depth z      */
+  /* plan: orthographic drop to the footprint on the front face, then
+     the projector from the red slit through the footprint, read at z */
   line(fx(t.x),fzP(t.z),fx(t.x),fzP(S.c),inkA(.5),1,[5,4]);
   dot(fx(t.x),fzP(S.c),2.4,YEL); dot(fx(t.x),fzP(S.c),1.1,INK);
-  line(fx(t.x),fzP(S.c),fx(p.X),fzP(t.z),RED,1.5);
+  line(fx(0),fzP(S.Zv),fx(p.X),fzP(t.z),RED,1.5);
   dot(fx(p.X),fzP(t.z),2.4,RED);
   /* side: same, through the blue slit */
   line(fzS(t.z),fy(t.y),fzS(S.c),fy(t.y),inkA(.5),1,[5,4]);
   dot(fzS(S.c),fy(t.y),2.4,YEL); dot(fzS(S.c),fy(t.y),1.1,INK);
-  line(fzS(S.c),fy(t.y),fzS(t.z),fy(p.Y),BLUE,1.5);
+  line(fzS(S.Zh),fy(0),fzS(t.z),fy(p.Y),BLUE,1.5);
   dot(fzS(t.z),fy(p.Y),2.4,BLUE);
   /* drop + carry into the construction */
   line(fx(p.X),fzP(t.z),fx(p.X),fy(p.Y),inkA(.55),1,[5,4]);
@@ -486,35 +482,6 @@ function drawTrace(){
   dot(fzS(t.z),fy(t.y),5,INK,true); dot(fzS(t.z),fy(t.y),1.8,INK);
 }
 
-/* ---- title block, in the empty half below the diagonal ---- */
-function drawTitleBlock(){
-  var w=268, h=132;
-  var s=Math.min(1,(L.W-L.colX-36)/w);
-  var x=L.colX+18, y=L.rowY-h*s-16;
-  ctx.save();
-  ctx.translate(x,y); ctx.scale(s,s); x=0; y=0;
-  ctx.fillStyle=PAPER; ctx.fillRect(x,y,w,h);
-  ctx.strokeStyle=inkA(.7); ctx.lineWidth=1; ctx.strokeRect(x,y,w,h);
-  line(x,y+22,x+w,y+22,inkA(.7),1);
-  line(x,y+h-24,x+w,y+h-24,inkA(.7),1);
-  cap('tetra engine \u00b7 double-slit project', x+10, y+15, 9, INK);
-  text('SHEET 35\u00b7G \u00b7 GLIDE CONSTRUCTION', x+10, y+40, 11, INK);
-  cap('plan \u00b7 elevation \u00b7 image \u2014 transpose of sheet 35',
-      x+10, y+56, 7.5, inkA(.6));
-  var AR=GM.crossRatio(S.Zv,S.Zh,S.c,S.near);
-  var devG=bowDeviation(glid), devC=bowDeviation(proj);
-  var t=S.trace, g=glid(t), q=proj(t);
-  var Pu = Math.abs(t.x)>1e-6 ? (g.X*q.X/(t.x*t.x)).toFixed(4) : '\u2014';
-  var Pv = Math.abs(t.y)>1e-6 ? (g.Y*q.Y/(t.y*t.y)).toFixed(4) : '\u2014';
-  ctx.font='10px ui-monospace,Menlo,monospace'; ctx.fillStyle=INK;
-  ctx.fillText('Zv '+S.Zv.toFixed(0)+'   Zh '+S.Zh.toFixed(0)+
-               '   screen '+S.c.toFixed(0), x+10, y+74);
-  ctx.fillText('AR(near) = (Zv,Zh;c,z) = '+AR.toFixed(4), x+10, y+88);
-  ctx.fillText('gauge \u03a0u '+Pu+'   \u03a0v '+Pv, x+10, y+102);
-  cap('one congruence \u00b7 edges reading \u2014 bow '+devG.toFixed(1)+
-      ' u (cross-slit '+devC.toFixed(1)+' u)', x+10, y+h-9, 8, inkA(.6));
-  ctx.restore();
-}
 function bowDeviation(fn){
   var pts=depthLine(fn,S.halfW,S.halfH,S.near,S.far,33);
   var a=pts[0], b=pts[pts.length-1];
@@ -549,16 +516,14 @@ function clampAll(){
   S.Zh=Math.min(Math.max(S.Zh,S.Zv+0.5),330);
   S.near=Math.max(S.near,S.Zh+90);
   S.far=Math.max(S.far,S.near+60);
-  S.c=Math.min(Math.max(S.c,-50),S.near-40);
-  if(Math.abs(S.c-S.Zv)<3) S.c=S.Zv+(S.c>=S.Zv?3:-3);
-  if(Math.abs(S.c-S.Zh)<3) S.c=S.Zh+(S.c>=S.Zh?3:-3);
+  S.c=S.near;    /* picture plane always contains the front face */
   S.trace.z=Math.min(Math.max(S.trace.z,S.near),S.far);
   S.trace.x=Math.min(Math.max(S.trace.x,-S.halfW),S.halfW);
   S.trace.y=Math.min(Math.max(S.trace.y,-S.halfH),S.halfH);
   syncSliders();
 }
-function invPlan(px,py){ return {x:px/L.k-380, z:(L.rowY-py)/L.k-60}; }
-function invSide(px,py){ return {z:(px-L.colX)/L.k-60, y:150-(py-L.rowY)/L.k}; }
+function invPlan(px,py){ return {x:px/L.k-300, z:(L.rowY-py)/L.k-60}; }
+function invSide(px,py){ return {z:(px-L.colX)/L.k-60, y:250-(py-L.rowY)/L.k}; }
 cv.addEventListener('pointerdown',function(e){
   var r=cv.getBoundingClientRect(), px=e.clientX-r.left, py=e.clientY-r.top;
   drag=hits(px,py);
@@ -575,8 +540,8 @@ window.addEventListener('pointermove',function(e){
     case 'redS':  S.Zv=Q.z; break;
     case 'blueP': S.Zh=P.z; break;
     case 'blueS': S.Zh=Q.z; break;
-    case 'yelP':  S.c=P.z;  break;
-    case 'yelS':  S.c=Q.z;  break;
+    case 'yelP':  S.near=P.z;  break;   /* yellow carries the front face */
+    case 'yelS':  S.near=Q.z;  break;
   }
   clampAll(); needsDraw=true;
 });
@@ -589,7 +554,7 @@ window.addEventListener('pointercancel',function(e){
 
 /* ---------------- tray wiring ---------------- */
 function $(id){ return document.getElementById(id); }
-var sliders=[['sZv','Zv'],['sZh','Zh'],['sC','c'],['sNear','near'],['sFar','far']];
+var sliders=[['sZv','Zv'],['sZh','Zh'],['sNear','near'],['sFar','far']];
 sliders.forEach(function(sv){
   $(sv[0]).addEventListener('input',function(){
     S[sv[1]]=parseFloat(this.value); clampAll(); needsDraw=true; });
@@ -598,7 +563,6 @@ function syncSliders(){
   $('sZv').value=S.Zv; $('vZv').textContent=S.Zv.toFixed(0);
   $('sZh').value=S.Zh; $('vZh').textContent=S.Zh.toFixed(0);
   $('sZh').min=(S.Zv+1).toFixed(0);
-  $('sC').value=S.c;   $('vC').textContent=S.c.toFixed(0);
   $('sNear').value=S.near; $('vNear').textContent=S.near.toFixed(0);
   $('sFar').value=S.far;  $('vFar').textContent=S.far.toFixed(0);
   var AR=GM.crossRatio(S.Zv,S.Zh,S.c,S.near);
