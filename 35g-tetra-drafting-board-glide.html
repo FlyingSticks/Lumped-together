@@ -66,6 +66,7 @@
   <button class="chip" id="cSweep" aria-pressed="false">Sweep</button>
   <button class="chip" id="cGl" aria-pressed="true">Glide</button>
   <button class="chip" id="cCS" aria-pressed="true">Cross-slit</button>
+  <button class="chip" id="cHarm" aria-pressed="false">Harmonic</button>
   <button class="chip" id="cPin" aria-pressed="false">Pinhole</button>
   <button class="chip" id="cAxes" aria-pressed="true">Axes</button>
   <button class="chip" id="cLab" aria-pressed="true">Labels</button>
@@ -122,7 +123,23 @@
   }
   function level(z, c, far){ return 16*(z-c)/(far-c); }     /* measured depth */
   function zOfLevel(L, c, far){ return c + L*(far-c)/16; }
-  var GM = { project:project, glide:glide, crossRatio:crossRatio,
+  /* Harmonic graduation: the unique Mobius re-graduation of each straight
+     glide line sending level 0 -> corner, level 16 -> back-wall mark, and
+     level INFINITY -> the line's crossing with the horizontal vanishing
+     axis (h1/h2). Marks stay on the same straight lines; the gaps to the
+     h-crossing run as a harmonic progression, the depth plane at infinity
+     maps to the flat segment h2·A·h1, and the v pair lies beyond
+     even that -- unreachable at any depth, directional only.            */
+  function uHarm(t, c, Zh, far){
+    var uh=(far-Zh)/(far-c); return uh*t/(t+(uh-1));
+  }
+  function glideH(P, c, Zv, Zh, far){
+    var su=(c-Zv)/(far-Zv), sv=(c-Zh)/(far-Zh);
+    var u=uHarm((P.z-c)/(far-c), c, Zh, far);
+    return { X: P.x*(1+u*(su-1)), Y: P.y*(1+u*(sv-1)) };
+  }
+  var GM = { project:project, glide:glide, glideH:glideH, uHarm:uHarm,
+             crossRatio:crossRatio,
              vPoint:vPoint, hPoint:hPoint, level:level, zOfLevel:zOfLevel };
   if (typeof window !== 'undefined') window.GlideMath = GM;
   if (typeof module !== 'undefined' && module.exports) module.exports = GM;
@@ -148,7 +165,7 @@ var S = {
   near:435, far:675, halfW:100, halfH:50,
   trace:{x:100, y:50, z:560},
   showTrace:true, sweep:false, sweepU:0, sweepDone:false,
-  showGl:true, showCS:true, showPin:false,
+  showGl:true, showCS:true, showPin:false, harm:false,
   showAxes:true, showLab:true, showGrid:true
 };
 var reduceMotion = window.matchMedia &&
@@ -164,6 +181,11 @@ function glidPin(P){ var Zp=(S.Zv+S.Zh)/2,
 function zuPole(){ return S.c + (S.far - S.Zv); }  /* v pair depth (u exhausts) */
 function zvPole(){ return S.c + (S.far - S.Zh); }  /* h pair depth (v exhausts) */
 function zL(L){ return GM.zOfLevel(L, S.c, S.far); }
+function gauge(P){ return S.harm ? GM.glideH(P,S.c,S.Zv,S.Zh,S.far)
+                                 : GM.glide(P,S.c,S.Zv,S.Zh,S.far); }
+function uOf(z){ var t=(z-S.c)/(S.far-S.c);
+  return S.harm ? GM.uHarm(t,S.c,S.Zh,S.far) : t; }
+function dzOf(z){ return S.c + uOf(z)*(S.far-S.c); }  /* graduated depth  */
 function depthLine(fn,x,y,z0,z1,N){
   var out=[], i, z;
   for(i=0;i<N;i++){ z=z0+(z1-z0)*i/(N-1); out.push(fn({x:x,y:y,z:z})); }
@@ -315,8 +337,14 @@ function drawPlan(){
                           : [-S.halfW,S.halfW], Lv;
     for(i=0;i<feet.length;i++){
       line(fx(feet[i]),fz(S.c),fx(0),fz(zuPole()),teaA(.4),.8);
-      for(Lv=0;Lv<=16;Lv+=4)
-        dot(fx(feet[i]*(zuPole()-zL(Lv))/(zuPole()-S.c)),fz(zL(Lv)),1.4,teaA(.6));
+      for(Lv=0;Lv<=16;Lv+=4){
+        var gm=gauge({x:feet[i],y:0,z:zL(Lv)});
+        dot(fx(gm.X),fz(dzOf(zL(Lv))),1.4,teaA(.6));
+      }
+    }
+    if(S.harm){   /* level infinity: the whole armature's marks stop here */
+      line(10,fz(S.c+(S.far-S.Zh)),L.colX-10,fz(S.c+(S.far-S.Zh)),grnA(.55),1,[3,4]);
+      num('\u221e', fx(-S.halfW)-8, fz(S.c+(S.far-S.Zh))+3, 9, GRN, 'right');
     }
     dot(fx(0),fz(zuPole()),4.2,RED,true);
     cap('v pair \u00b7 z = c+(far\u2212Zv)', fx(8), fz(zuPole())+3, 8, RED);
@@ -370,8 +398,14 @@ function drawSide(){
     var feet=[-S.halfH,S.halfH];
     for(i=0;i<feet.length;i++){
       line(fz(S.c),fy(feet[i]),fz(zvPole()),fy(0),teaA(.4),.8);
-      for(Lv=0;Lv<=16;Lv+=4)
-        dot(fz(zL(Lv)),fy(feet[i]*(zvPole()-zL(Lv))/(zvPole()-S.c)),1.4,teaA(.6));
+      for(Lv=0;Lv<=16;Lv+=4){
+        var gm=gauge({x:0,y:feet[i],z:zL(Lv)});
+        dot(fz(dzOf(zL(Lv))),fy(gm.Y),1.4,teaA(.6));
+      }
+    }
+    if(S.harm){
+      line(fz(S.c+(S.far-S.Zh)),L.rowY+8,fz(S.c+(S.far-S.Zh)),L.H-10,grnA(.55),1,[3,4]);
+      num('\u221e', fz(S.c+(S.far-S.Zh)), L.rowY+20, 9, GRN, 'center');
     }
     dot(fz(zvPole()),fy(0),4.2,BLUE,true);
     cap('h pair \u00b7 z = c+(far\u2212Zh)', fz(zvPole())-6, fy(-12)+3, 8, BLUE,'right');
@@ -447,8 +481,8 @@ function drawConstruction(){
       line(fx(a.X),fy(a.Y),fx(b.X),fy(b.Y),teaA(.35),.8,[2,4]);
     });
     for(Lv=4; Lv<=12; Lv+=4){
-      var ga=glid({x:-S.halfW,y: S.halfH,z:zL(Lv)}),
-          gb=glid({x:S.halfW,y:-S.halfH,z:zL(Lv)});
+      var ga=gauge({x:-S.halfW,y: S.halfH,z:zL(Lv)}),
+          gb=gauge({x:S.halfW,y:-S.halfH,z:zL(Lv)});
       ctx.save(); ctx.strokeStyle=teaA(.35); ctx.lineWidth=.7;
       ctx.strokeRect(fx(ga.X),fy(ga.Y),fx(gb.X)-fx(ga.X),fy(gb.Y)-fy(ga.Y));
       ctx.restore();
@@ -468,10 +502,16 @@ function drawConstruction(){
       var tip=poly(pts,TEA,1.7,null,sweepFrac);
       if(S.sweep && sweepFrac<1) dot(tip[0],tip[1],2.6,TEA);
       /* level marks fall equally spaced along the straight line */
-      for(Lv=0;Lv<=16;Lv+=4){ var g=glid({x:cn.x,y:cn.y,z:zL(Lv)});
+      for(Lv=0;Lv<=16;Lv+=4){ var g=gauge({x:cn.x,y:cn.y,z:zL(Lv)});
         dot(fx(g.X),fy(g.Y),1.4,TEA); }
     });
     /* vanishing pairs */
+    if(S.harm){  /* the depth plane at infinity: the flat segment h2 A h1 */
+      var hA=GM.hPoint(-S.halfW,S.c,S.Zv,S.Zh,S.far),
+          hB=GM.hPoint( S.halfW,S.c,S.Zv,S.Zh,S.far);
+      line(fx(hA.X),fy(0),fx(hB.X),fy(0),GRN,1.5);
+      cap('limit of depth levels \u00b7 \u221e', fx(hB.X)+8, fy(0)+13, 7, GRN);
+    }
     [ S.halfH,-S.halfH].forEach(function(y){
       var v=GM.vPoint(y,S.c,S.Zv,S.Zh,S.far);
       dot(fx(0),fy(v.Y),2.4,RED);
@@ -527,22 +567,28 @@ function drawConstruction(){
   var ry=Math.max(L.rowY+14, fy(S.halfH)-24);
   line(fx(-S.halfW)-4, ry, fx(0)+4, ry, grnA(.8), 1);
   for(Lv=0;Lv<=16;Lv+=4){
-    var gx=fx(-S.halfW*(1+((zL(Lv)-S.c)/(S.far-S.c))*((S.c-S.Zv)/(S.far-S.Zv)-1)));
+    var gt=gauge({x:-S.halfW,y:S.halfH,z:zL(Lv)});
+    var gx=fx(gt.X);
     line(gx,ry-3,gx,ry+3,GRN,1.1);
     if(Lv%8===0) num(String(Lv), gx, ry-6, 8, GRN, 'center');
-    var gyTop=fy(S.halfH*(1+((zL(Lv)-S.c)/(S.far-S.c))*((S.c-S.Zh)/(S.far-S.Zh)-1)));
-    line(gx,ry+3,gx,gyTop,grnA(.3),.7);
+    line(gx,ry+3,gx,fy(gt.Y),grnA(.3),.7);
   }
+  if(S.harm) num('\u2026',
+    (fx(gauge({x:-S.halfW,y:0,z:zL(16)}).X)+fx(GM.hPoint(-S.halfW,S.c,S.Zv,S.Zh,S.far).X))/2,
+    ry-5, 8, GRN, 'center');
   var hL=GM.hPoint(-S.halfW,S.c,S.Zv,S.Zh,S.far);
   line(fx(hL.X),ry-3,fx(hL.X),ry+3,BLUE,1.1);
   num('h', fx(hL.X), ry-6, 8, BLUE, 'center');
+  if(S.harm) num('\u221e', fx(hL.X), ry+13, 9, GRN, 'center');
   line(fx(0),ry-3,fx(0),ry+3,RED,1.1);
   num('v', fx(0)-5, ry-6, 8, RED, 'center');
   lab('\u221e', fx(0)+6, ry-4, 9, PUR);
   num('A', fx(0)+15, ry-5, 7, PUR, 'center');
   cap('h1 \u00b7 A \u00b7 h2 \u00b7 one vanishing axis \u00b7 limit of measured depth \u2014 v1 v2 directional',
       14, L.H-40, 7.5, inkA(.55));
-  cap('levels equally spaced on the glide \u00b7 crowding on the cross-slit \u00b7 A reached only at \u221e',
+  cap(S.harm
+    ? 'levels in harmonic progression on the glide \u00b7 depth plane at \u221e = the segment h2\u00b7A\u00b7h1 \u00b7 v pair beyond reach'
+    : 'levels equally spaced on the glide \u00b7 crowding on the cross-slit \u00b7 A reached only at \u221e',
       14, L.H-28, 7.5, inkA(.55));
   ctx.restore();
 }
@@ -558,13 +604,13 @@ function drawTrace(){
   dot(fzS(S.c),fy(t.y),2.4,YEL); dot(fzS(S.c),fy(t.y),1.1,INK);
 
   if(S.showGl){                                /* glide reading  */
-    var g=glid(t);
+    var g=gauge(t), dz=dzOf(t.z);
     line(fx(t.x),fzP(S.c),fx(0),fzP(zuPole()),teaA(.9),1.5);
-    dot(fx(g.X),fzP(t.z),2.4,TEA);
+    dot(fx(g.X),fzP(dz),2.4,TEA);
     line(fzS(S.c),fy(t.y),fzS(zvPole()),fy(0),teaA(.9),1.5);
-    dot(fzS(t.z),fy(g.Y),2.4,TEA);
-    line(fx(g.X),fzP(t.z),fx(g.X),fy(g.Y),teaA(.6),1,[5,4]);
-    line(fzS(t.z),fy(g.Y),fx(g.X),fy(g.Y),teaA(.6),1,[5,4]);
+    dot(fzS(dz),fy(g.Y),2.4,TEA);
+    line(fx(g.X),fzP(dz),fx(g.X),fy(g.Y),teaA(.6),1,[5,4]);
+    line(fzS(dz),fy(g.Y),fx(g.X),fy(g.Y),teaA(.6),1,[5,4]);
     dot(fx(g.X),fy(g.Y),3.2,TEA);
     line(fx(g.X)-8,fy(g.Y),fx(g.X)+8,fy(g.Y),TEA,.8);
     line(fx(g.X),fy(g.Y)-8,fx(g.X),fy(g.Y)+8,TEA,.8);
@@ -690,7 +736,7 @@ function chip(id,key,cb){
     if(cb)cb(); needsDraw=true; });
 }
 chip('cTrace','showTrace'); chip('cGl','showGl'); chip('cCS','showCS');
-chip('cPin','showPin');
+chip('cHarm','harm'); chip('cPin','showPin');
 chip('cAxes','showAxes');   chip('cLab','showLab'); chip('cGrid','showGrid');
 $('cSweep').addEventListener('click',function(){
   S.sweep=!S.sweep; this.setAttribute('aria-pressed',S.sweep);
