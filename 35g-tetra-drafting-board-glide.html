@@ -171,10 +171,13 @@ function depthLine(fn,x,y,z0,z1,N){
 }
 
 /* ---------------- sheet layout ----------------
-   world extents: x in [-150,150], y in [-150,150], z in [-60,1100]
+   world extents: x in [-130,130], y in [-130,130], z in [-60,1100]
    (the armature poles lie a full slit-to-back-wall distance behind
-   the plane, so the plan runs tall). Uniform scale k; quadrants
-   share the interior junction so the 45-degree transfer is exact. */
+   the plane). x and y share one scale k so drops and carries are
+   exact; z is drawn compressed at kz = 0.45k in BOTH plan and side,
+   which crowds the views together and enlarges the front view while
+   keeping every incidence construction valid (the compression is
+   affine) and the 45-degree transfer exact (both z runs use kz).  */
 var cv=document.getElementById('sheet'), ctx=cv.getContext('2d');
 if(!ctx) return;
 var dpr=1, L={};   /* layout cache */
@@ -183,19 +186,19 @@ function layout(){
   var cw=wrap.clientWidth-20, ch=wrap.clientHeight-20;
   if(cw<100||ch<100){ cw=960; ch=960; }   /* headless / zero-layout guard */
   dpr=Math.min(window.devicePixelRatio||1,3);
-  var k=Math.min(cw/1460, ch/1460);
-  var W=1460*k, H=1460*k;
+  var k=Math.min(cw/782, ch/782), kz=0.45*k;
+  var W=782*k, H=782*k;
   cv.width=Math.round(W*dpr); cv.height=Math.round(H*dpr);
   cv.style.width=W+'px'; cv.style.height=H+'px';
   ctx.setTransform(dpr,0,0,dpr,0,0);
-  L.k=k;
-  L.colX = 300*k;            /* junction x (plan|transfer, constr|side) */
-  L.rowY = 1160*k;           /* junction y (top row | bottom row)       */
+  L.k=k; L.kz=kz;
+  L.colX = 260*k;            /* junction x (plan|transfer, constr|side) */
+  L.rowY = 1160*kz;          /* junction y (top row | bottom row)       */
   L.W=W; L.H=H;
-  L.fx  = function(x){ return (x+150)*k; };            /* plan x, image X */
-  L.fzP = function(z){ return L.rowY-(z+60)*k; };      /* plan z (up)     */
-  L.fzS = function(z){ return L.colX+(z+60)*k; };      /* side z (right)  */
-  L.fy  = function(y){ return L.rowY+(150-y)*k; };     /* side y, image Y */
+  L.fx  = function(x){ return (x+130)*k; };            /* plan x, image X */
+  L.fzP = function(z){ return L.rowY-(z+60)*kz; };     /* plan z (up)     */
+  L.fzS = function(z){ return L.colX+(z+60)*kz; };     /* side z (right)  */
+  L.fy  = function(y){ return L.rowY+(130-y)*k; };     /* side y, image Y */
 }
 
 /* ---------------- drawing primitives ---------------- */
@@ -258,8 +261,8 @@ function draw(){
   line(L.colX,6,L.colX,L.H-6,inkA(.18),1);
 
   /* 45-degree transfer diagonal */
-  line(L.colX,L.rowY, L.colX+1140*k, L.rowY-1140*k, inkA(.5),1);
-  cap('45\u00b0 transfer', L.colX+16, L.rowY-1122*k+18, 9, inkA(.45));
+  line(L.colX,L.rowY, L.colX+1140*L.kz, L.rowY-1140*L.kz, inkA(.5),1);
+  cap('45\u00b0 transfer', L.colX+16, L.rowY-1122*L.kz+18, 9, inkA(.45));
 
   drawPlan(); drawSide(); drawConstruction();
 
@@ -430,11 +433,10 @@ function drawConstruction(){
       if(S.sweep && sweepFrac<1) dot(tip[0],tip[1],2.4,PUR);
       /* level marks crowd along the curve */
       for(Lv=0;Lv<=16;Lv+=4){ var q=proj({x:cn.x,y:cn.y,z:zL(Lv)});
-        dot(fx(q.X),fy(q.Y),1.7,PUR); }
+        dot(fx(q.X),fy(q.Y),1.4,PUR); }
     });
-    dot(fx(0),fy(0),2.8,PUR);
-    lab('A', fx(0)+5, fy(0)+13, 10, PUR);
-    cap('curved depth lines reach A only at \u221e', 14, L.rowY+22, 8, PUR);
+    dot(fx(0),fy(0),2.4,PUR);
+    lab('A', fx(0)+5, fy(0)+12, 9, PUR);
   }
 
   /* ---- glide reading: straight measured armature ---- */
@@ -467,22 +469,19 @@ function drawConstruction(){
       if(S.sweep && sweepFrac<1) dot(tip[0],tip[1],2.6,TEA);
       /* level marks fall equally spaced along the straight line */
       for(Lv=0;Lv<=16;Lv+=4){ var g=glid({x:cn.x,y:cn.y,z:zL(Lv)});
-        dot(fx(g.X),fy(g.Y),1.7,TEA); }
+        dot(fx(g.X),fy(g.Y),1.4,TEA); }
     });
     /* vanishing pairs */
     [ S.halfH,-S.halfH].forEach(function(y){
       var v=GM.vPoint(y,S.c,S.Zv,S.Zh,S.far);
-      dot(fx(0),fy(v.Y),2.8,RED);
-      lab(v.Y>0?'v2':'v1', fx(0)-7, fy(v.Y)+(v.Y>0?-6:14), 10, RED, 'right');
+      dot(fx(0),fy(v.Y),2.4,RED);
+      lab(v.Y>0?'v2':'v1', fx(0)-6, fy(v.Y)+(v.Y>0?-5:12), 9, RED, 'right');
     });
     [ S.halfW,-S.halfW].forEach(function(x){
       var h=GM.hPoint(x,S.c,S.Zv,S.Zh,S.far);
-      dot(fx(h.X),fy(0),2.8,BLUE);
-      lab(h.X>0?'h1':'h2', fx(h.X)+(h.X>0?7:-7), fy(0)-7, 10, BLUE, h.X>0?'left':'right');
+      dot(fx(h.X),fy(0),2.4,BLUE);
+      lab(h.X>0?'h1':'h2', fx(h.X)+(h.X>0?6:-6), fy(0)-6, 9, BLUE, h.X>0?'left':'right');
     });
-    cap('h1 \u00b7 A \u00b7 h2 share one vanishing axis \u2014 the limit of measured depth',
-        14, L.rowY+34, 8, inkA(.6));
-    cap('v1 v2 \u00b7 directional \u00b7 deeper than the limit', 14, L.rowY+46, 8, RED);
   }
 
   /* pinhole comparison: slits fused — one-point measured armature */
@@ -496,7 +495,7 @@ function drawConstruction(){
     ctx.save(); ctx.strokeStyle=ORG; ctx.lineWidth=.9; ctx.setLineDash([4,3]);
     ctx.strokeRect(fx(pa.X),fy(pa.Y),fx(pb.X)-fx(pa.X),fy(pb.Y)-fy(pa.Y));
     ctx.restore();
-    cap('one-point armature \u00b7 slits fused', 14, L.rowY+58, 8, ORG);
+    cap('one-point armature \u00b7 slits fused', 14, L.rowY+22, 8, ORG);
   }
 
   /* the shared levels, drawn on top: level 0 in ink, level 16 in green */
@@ -511,36 +510,39 @@ function drawConstruction(){
     var ix = cn.x>0 ? '2':'1', iy = cn.y>0 ? '2':'1';
     var lx=fx(cn.x)+(cn.x>0? 6:-6), ly=fy(cn.y)+(cn.y>0? -8:16);
     ctx.save();
-    ctx.font='600 12px "Avenir Next","Futura",sans-serif';
+    ctx.font='600 10px "Avenir Next","Futura",sans-serif';
     ctx.fillStyle=INK;
-    var ax = lx + (cn.x>0?0:-14);
+    var ax = lx + (cn.x>0?0:-12);
     ctx.fillText('A', ax, ly);
-    ctx.font='600 8.5px "Avenir Next","Futura",sans-serif';
-    ctx.fillStyle=RED;  ctx.fillText(iy, ax+9, ly+3);
-    ctx.fillStyle=BLUE; ctx.fillText(ix, ax+14, ly+3);
+    ctx.font='600 7.5px "Avenir Next","Futura",sans-serif';
+    ctx.fillStyle=RED;  ctx.fillText(iy, ax+8, ly+3);
+    ctx.fillStyle=BLUE; ctx.fillText(ix, ax+12, ly+3);
     ctx.restore();
   });
   cap('back wall \u00b7 level 16 \u00b7 shared by both readings', fx(-bw.X), fy(bw.Y)-5, 7.5, GRN);
 
   /* measured-level ruler: ticks ride the glide's left edge, so the
-     scale is linear and the drops are vertical                     */
-  var ry=L.rowY+72;
-  line(fx(-S.halfW)-4, ry, fx(0)+6, ry, grnA(.8), 1);
+     scale is linear and the drops are vertical; it sits just above
+     the true face, clear of the figure                             */
+  var ry=Math.max(L.rowY+14, fy(S.halfH)-24);
+  line(fx(-S.halfW)-4, ry, fx(0)+4, ry, grnA(.8), 1);
   for(Lv=0;Lv<=16;Lv+=4){
     var gx=fx(-S.halfW*(1+((zL(Lv)-S.c)/(S.far-S.c))*((S.c-S.Zv)/(S.far-S.Zv)-1)));
-    line(gx,ry-4,gx,ry+4,GRN,1.2);
-    num(String(Lv), gx, ry-8, 9, GRN, 'center');
+    line(gx,ry-3,gx,ry+3,GRN,1.1);
+    if(Lv%8===0) num(String(Lv), gx, ry-6, 8, GRN, 'center');
     var gyTop=fy(S.halfH*(1+((zL(Lv)-S.c)/(S.far-S.c))*((S.c-S.Zh)/(S.far-S.Zh)-1)));
-    line(gx,ry+4,gx,gyTop,grnA(.35),.7);
+    line(gx,ry+3,gx,gyTop,grnA(.3),.7);
   }
   var hL=GM.hPoint(-S.halfW,S.c,S.Zv,S.Zh,S.far);
-  line(fx(hL.X),ry-4,fx(hL.X),ry+4,BLUE,1.2);
-  num('h', fx(hL.X), ry-8, 9, BLUE, 'center');
-  line(fx(0),ry-4,fx(0),ry+4,RED,1.2);
-  num('v', fx(0)-6, ry-8, 9, RED, 'center');
-  lab('\u221e', fx(0)+8, ry-6, 11, PUR);
-  num('A', fx(0)+18, ry-7, 8, PUR, 'center');
-  cap('depth levels read equally spaced on the glide \u00b7 crowd on the cross-slit',
+  line(fx(hL.X),ry-3,fx(hL.X),ry+3,BLUE,1.1);
+  num('h', fx(hL.X), ry-6, 8, BLUE, 'center');
+  line(fx(0),ry-3,fx(0),ry+3,RED,1.1);
+  num('v', fx(0)-5, ry-6, 8, RED, 'center');
+  lab('\u221e', fx(0)+6, ry-4, 9, PUR);
+  num('A', fx(0)+15, ry-5, 7, PUR, 'center');
+  cap('h1 \u00b7 A \u00b7 h2 \u00b7 one vanishing axis \u00b7 limit of measured depth \u2014 v1 v2 directional',
+      14, L.H-40, 7.5, inkA(.55));
+  cap('levels equally spaced on the glide \u00b7 crowding on the cross-slit \u00b7 A reached only at \u221e',
       14, L.H-28, 7.5, inkA(.55));
   ctx.restore();
 }
@@ -635,8 +637,8 @@ function clampAll(){
   S.trace.y=Math.min(Math.max(S.trace.y,-S.halfH),S.halfH);
   syncSliders();
 }
-function invPlan(px,py){ return {x:px/L.k-150, z:(L.rowY-py)/L.k-60}; }
-function invSide(px,py){ return {z:(px-L.colX)/L.k-60, y:150-(py-L.rowY)/L.k}; }
+function invPlan(px,py){ return {x:px/L.k-130, z:(L.rowY-py)/L.kz-60}; }
+function invSide(px,py){ return {z:(px-L.colX)/L.kz-60, y:130-(py-L.rowY)/L.k}; }
 cv.addEventListener('pointerdown',function(e){
   var r=cv.getBoundingClientRect(), px=e.clientX-r.left, py=e.clientY-r.top;
   drag=hits(px,py);
