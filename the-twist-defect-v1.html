@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>the twist defect — v1</title>
+<style>
+  html,body{margin:0;background:#faf6ef;color:#43203f;font-family:Georgia,"Times New Roman",serif;}
+  .wrap{max-width:980px;margin:0 auto;padding:14px 12px 40px;}
+  h1{font-size:22px;font-weight:normal;margin:0 0 4px;letter-spacing:.02em}
+  .sub{font-size:14px;color:#6a2c91;margin:0 0 10px}
+  svg{width:100%;height:auto;display:block;touch-action:none;user-select:none;-webkit-user-select:none}
+  .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0}
+  button{font:14px Georgia,serif;background:#fff;color:#43203f;border:1px solid #b08948;border-radius:6px;padding:6px 12px;cursor:pointer}
+  button.on{background:#43203f;color:#faf6ef}
+  label.sl{font-size:13px;display:flex;align-items:center;gap:6px}
+  input[type=range]{width:110px}
+  .ledger{font-size:14px;border-top:1px solid #b08948;margin-top:10px;padding-top:8px;line-height:1.55}
+  .ledger b{font-weight:normal;color:#6a2c91}
+  .mono{font-family:Menlo,Consolas,monospace;font-size:13px}
+  .badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:12px;letter-spacing:.08em;background:#43203f;color:#faf6ef}
+  .badge.flat{background:#b08948}
+  .badge.para{background:#3d8f3d}
+  .note{font-size:14px;line-height:1.55;margin-top:14px;max-width:70ch}
+  .note i{color:#6a2c91}
+  .c1{color:#c0322b}.c2{color:#177f75}.c3{color:#6a2c91}.c4{color:#b08948}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>The twist defect — v1</h1>
+<p class="sub">corners are positions · T = A − B + C − D · the fabric diagonal bows off its chord by |T|/4 · drag corners in plan, raise them with the sliders</p>
+
+<svg id="stage" viewBox="0 0 900 640" xmlns="http://www.w3.org/2000/svg" aria-label="twisted frame with fabric surface">
+  <g id="floor"></g>
+  <g id="surf"></g>
+  <g id="frame"></g>
+  <g id="chords"></g>
+  <g id="diag"></g>
+  <g id="mids"></g>
+  <g id="posv"></g>
+  <g id="chain"></g>
+  <g id="handles"></g>
+  <g id="labels"></g>
+</svg>
+
+<div class="row">
+  <label class="sl">A <input type="range" id="zA" min="-120" max="120" value="70"></label>
+  <label class="sl">B <input type="range" id="zB" min="-120" max="120" value="-40"></label>
+  <label class="sl">C <input type="range" id="zC" min="-120" max="120" value="70"></label>
+  <label class="sl">D <input type="range" id="zD" min="-120" max="120" value="-40"></label>
+</div>
+<div class="row">
+  <button id="pPara">Parallelogram</button>
+  <button id="pTrap">Flat trapezoid</button>
+  <button id="pSaddle">Saddle</button>
+  <button id="pWild">Wild</button>
+  <span style="width:12px"></span>
+  <button id="tPos" class="on">Position vectors</button>
+  <button id="tChain" class="on">Alternating sum</button>
+  <button id="tRul" class="on">Fabric</button>
+</div>
+
+<div class="ledger" id="ledger"></div>
+
+<div class="note">
+<p><i>What is drawn.</i> The <span class="c1">crimson</span> quadrilateral is the wood frame, corners A B C D in order. The grey lines are the nylon: the bilinear surface, straight along every ruling, curved everywhere else. The <span class="c3">purple</span> curve is the diagonal drawn <i>on the fabric</i> from A to C; the dashed line under it is the straight chord A–C through the air. The gap between their midpoints is the sagitta.</p>
+<p><i>The corners are positions.</i> From the origin O each corner is an arrow O→A, O→B, … (the thin <span class="c4">gold</span> arrows). A − B is then the edge from B to A. The <span class="c2">teal</span> chain walks +A, −B, +C, −D head to tail from O; where it ends is T. A parallelogram walks back to O and T = 0.</p>
+<p><i>What the ledger checks.</i> The fabric midpoint is (A+B+C+D)/4, the chord midpoint is (A+C)/2; their difference is −T/4, so the sagitta is |T|/4 — measured live, not assumed. T is also twice the vector between the two chord midpoints. Note that a flat trapezoid still has T ≠ 0: T vanishes for parallelograms, not merely for flat frames — the diagonal still bows, in the plane.</p>
+</div>
+</div>
+
+<script>
+(function(){
+  var NS='http://www.w3.org/2000/svg';
+  var svg=document.getElementById('stage');
+  var G={};['floor','surf','frame','chords','diag','mids','posv','chain','handles','labels'].forEach(function(k){G[k]=document.getElementById(k);});
+  var CR='#c0322b',TE='#177f75',PU='#6a2c91',GO='#b08948',PL='#43203f',GR='#9a8f86',GN='#3d8f3d';
+
+  // scene: x right, y into depth, z up. Frame corners as positions from origin O.
+  var P={A:[-150,-110,70],B:[150,-110,-40],C:[150,110,70],D:[-150,110,-40]};
+  var show={pos:true,chain:true,rul:true};
+
+  // axonometric projection
+  var c30=Math.cos(Math.PI/6),s30=Math.sin(Math.PI/6),CX=470,CY=360,K=1.0;
+  function proj(p){return [CX+K*(p[0]-p[1])*c30, CY-K*(p[0]+p[1])*s30-K*p[2]];}
+  function unproj(X,Y,z){var u=(X-CX)/(K*c30), v=-(Y-CY+K*z)/(K*s30); return [(u+v)/2,(v-u)/2,z];}
+
+  function el(tag,attrs,parent){var e=document.createElementNS(NS,tag);for(var k in attrs)e.setAttribute(k,attrs[k]);(parent||svg).appendChild(e);return e;}
+  function clear(g){while(g.firstChild)g.removeChild(g.firstChild);}
+  function add(a,b){return [a[0]+b[0],a[1]+b[1],a[2]+b[2]];}
+  function sub(a,b){return [a[0]-b[0],a[1]-b[1],a[2]-b[2]];}
+  function mul(a,s){return [a[0]*s,a[1]*s,a[2]*s];}
+  function len(a){return Math.sqrt(a[0]*a[0]+a[1]*a[1]+a[2]*a[2]);}
+  function lerp(a,b,t){return add(mul(a,1-t),mul(b,t));}
+  // bilinear surface: A(s=0,t=0) B(1,0) C(1,1) D(0,1)
+  function S(s,t){return add(add(mul(P.A,(1-s)*(1-t)),mul(P.B,s*(1-t))),add(mul(P.C,s*t),mul(P.D,(1-s)*t)));}
+  function twist(){return sub(add(P.A,P.C),add(P.B,P.D));}
+  function pts(arr){return arr.map(function(p){var q=proj(p);return q[0].toFixed(1)+','+q[1].toFixed(1);}).join(' ');}
+  function arrow(g,a,b,col,w,dash){
+    var pa=proj(a),pb=proj(b);
+    var dx=pb[0]-pa[0],dy=pb[1]-pa[1],L=Math.hypot(dx,dy)||1;
+    var ux=dx/L,uy=dy/L,h=9;
+    el('line',{x1:pa[0],y1:pa[1],x2:pb[0]-ux*h*0.6,y2:pb[1]-uy*h*0.6,stroke:col,'stroke-width':w,'stroke-dasharray':dash||'none'},g);
+    el('polygon',{points:[pb[0],pb[1],pb[0]-ux*h-uy*h*0.45,pb[1]-uy*h+ux*h*0.45,pb[0]-ux*h+uy*h*0.45,pb[1]-uy*h-ux*h*0.45].join(' '),fill:col},g);
+  }
+  function text(g,p,str,col,dx,dy,size){var q=proj(p);var t=el('text',{x:q[0]+(dx||0),y:q[1]+(dy||0),fill:col,'font-size':size||15,'font-family':'Georgia,serif'},g);t.textContent=str;return t;}
+
+  var O=[0,0,-150]; // origin placed below the frame so position arrows read as arrows
+  var handles={},zsl={};
+
+  function draw(){
+    clear(G.floor);clear(G.surf);clear(G.frame);clear(G.chords);clear(G.diag);clear(G.mids);clear(G.posv);clear(G.chain);clear(G.labels);
+    // floor grid at z=O.z
+    var i;
+    for(i=-200;i<=200;i+=50){
+      el('polyline',{points:pts([[i,-200,O[2]],[i,200,O[2]]]),stroke:'#e9e1d4',fill:'none','stroke-width':1},G.floor);
+      el('polyline',{points:pts([[-200,i,O[2]],[200,i,O[2]]]),stroke:'#e9e1d4',fill:'none','stroke-width':1},G.floor);
+    }
+    // fabric rulings
+    if(show.rul){
+      var n=8,k,t,s,poly;
+      for(k=1;k<n;k++){
+        t=k/n;
+        el('polyline',{points:pts([S(0,t),S(1,t)]),stroke:GR,fill:'none','stroke-width':0.8},G.surf);
+        el('polyline',{points:pts([S(t,0),S(t,1)]),stroke:GR,fill:'none','stroke-width':0.8},G.surf);
+      }
+    }
+    // frame
+    el('polygon',{points:pts([P.A,P.B,P.C,P.D]),fill:'none',stroke:CR,'stroke-width':3,'stroke-linejoin':'round'},G.frame);
+    // chords (straight diagonals through the air)
+    el('polyline',{points:pts([P.A,P.C]),stroke:PU,fill:'none','stroke-width':1.4,'stroke-dasharray':'6 5'},G.chords);
+    el('polyline',{points:pts([P.B,P.D]),stroke:GO,fill:'none','stroke-width':1.2,'stroke-dasharray':'3 5'},G.chords);
+    // fabric diagonal A→C (s=t) — parabola, sampled
+    var arr=[],j;for(j=0;j<=40;j++){arr.push(S(j/40,j/40));}
+    el('polyline',{points:pts(arr),stroke:PU,fill:'none','stroke-width':2.6,'stroke-linecap':'round'},G.diag);
+    // midpoints and sagitta
+    var mF=S(0.5,0.5),mAC=lerp(P.A,P.C,0.5),mBD=lerp(P.B,P.D,0.5),T=twist();
+    el('polyline',{points:pts([mAC,mF]),stroke:PU,fill:'none','stroke-width':2},G.mids);
+    var q=proj(mF);el('circle',{cx:q[0],cy:q[1],r:4.5,fill:PU},G.mids);
+    q=proj(mAC);el('circle',{cx:q[0],cy:q[1],r:4,fill:'#faf6ef',stroke:PU,'stroke-width':1.6},G.mids);
+    q=proj(mBD);el('circle',{cx:q[0],cy:q[1],r:4,fill:'#faf6ef',stroke:GO,'stroke-width':1.6},G.mids);
+    text(G.labels,mF,'fabric mid',PU,8,-6,12);
+    text(G.labels,mAC,'chord mid',PU,8,14,12);
+    // T/2 between chord midpoints
+    if(len(T)>1)arrow(G.mids,mBD,mAC,TE,1.4,'2 3');
+    // position vectors
+    if(show.pos){
+      ['A','B','C','D'].forEach(function(k){arrow(G.posv,O,P[k],GO,1,'none');});
+      q=proj(O);el('circle',{cx:q[0],cy:q[1],r:3.5,fill:PL},G.posv);
+      text(G.labels,O,'O',PL,-16,14,14);
+    }
+    // alternating-sum chain +A −B +C −D from O
+    if(show.chain){
+      var p0=O,p1=add(p0,P.A),p2=sub(p1,P.B),p3=add(p2,P.C),p4=sub(p3,P.D);
+      arrow(G.chain,p0,p1,TE,2);arrow(G.chain,p1,p2,TE,2,'7 4');arrow(G.chain,p2,p3,TE,2);arrow(G.chain,p3,p4,TE,2,'7 4');
+      text(G.labels,lerp(p0,p1,.5),'+A',TE,6,-4,12);text(G.labels,lerp(p1,p2,.5),'−B',TE,6,-4,12);
+      text(G.labels,lerp(p2,p3,.5),'+C',TE,6,-4,12);text(G.labels,lerp(p3,p4,.5),'−D',TE,6,-4,12);
+      if(len(T)>1){arrow(G.chain,O,p4,PL,1.2,'2 2');text(G.labels,p4,'T',PL,8,4,16);}
+      else{text(G.labels,O,'T = 0',PL,10,-10,14);}
+    }
+    // corner labels + handles
+    ['A','B','C','D'].forEach(function(k){
+      q=proj(P[k]);
+      var h=handles[k];h.setAttribute('cx',q[0]);h.setAttribute('cy',q[1]);
+      text(G.labels,P[k],k,CR,k==='A'||k==='D'?-20:12,-8,18);
+      // drop line to floor
+      el('polyline',{points:pts([P[k],[P[k][0],P[k][1],O[2]]]),stroke:CR,fill:'none','stroke-width':0.7,'stroke-dasharray':'2 3'},G.floor);
+    });
+    ledger(T,mF,mAC,mBD);
+  }
+
+  function ledger(T,mF,mAC,mBD){
+    var sag=len(sub(mF,mAC)),pred=len(T)/4,drift=Math.abs(sag-pred);
+    var half=mul(sub(mAC,mBD),2),d2=len(sub(half,T));
+    var flat=Math.abs(P.A[2]-P.B[2])<1e-9&&Math.abs(P.A[2]-P.C[2])<1e-9&&Math.abs(P.A[2]-P.D[2])<1e-9;
+    var state=len(T)<1e-9?'<span class="badge para">PARALLELOGRAM · T = 0</span>':(flat?'<span class="badge flat">FLAT · T in the plane</span>':'<span class="badge">TWISTED</span>');
+    document.getElementById('ledger').innerHTML=
+      state+'<br>'+
+      '<b>T = A − B + C − D</b> = <span class="mono">('+T[0].toFixed(1)+', '+T[1].toFixed(1)+', '+T[2].toFixed(1)+')</span> &nbsp; |T| = <span class="mono">'+len(T).toFixed(2)+'</span><br>'+
+      '<b>sagitta</b> |fabric mid − chord mid| = <span class="mono">'+sag.toFixed(3)+'</span> &nbsp; |T|/4 = <span class="mono">'+pred.toFixed(3)+'</span> &nbsp; drift <span class="mono">'+drift.toExponential(1)+'</span><br>'+
+      '<b>T = 2·(mid AC − mid BD)</b> &nbsp; residual <span class="mono">'+d2.toExponential(1)+'</span>';
+  }
+
+  // persistent handles; window-level listeners filtered by pointerId
+  var drag=null;
+  function svgPt(ev){var p=svg.createSVGPoint();p.x=ev.clientX;p.y=ev.clientY;return p.matrixTransform(svg.getScreenCTM().inverse());}
+  ['A','B','C','D'].forEach(function(k){
+    var h=el('circle',{r:11,fill:'#faf6ef',stroke:CR,'stroke-width':2.5,cursor:'grab'},G.handles);
+    h.addEventListener('pointerdown',function(ev){drag={k:k,id:ev.pointerId};ev.preventDefault();});
+    handles[k]=h;
+    var sl=document.getElementById('z'+k);zsl[k]=sl;
+    sl.addEventListener('input',function(){P[k][2]=+sl.value;draw();});
+  });
+  window.addEventListener('pointermove',function(ev){
+    if(!drag||ev.pointerId!==drag.id)return;
+    var q=svgPt(ev),p=unproj(q.x,q.y,P[drag.k][2]);
+    p[0]=Math.max(-230,Math.min(230,p[0]));p[1]=Math.max(-230,Math.min(230,p[1]));
+    P[drag.k]=p;draw();
+  });
+  function up(ev){if(drag&&ev.pointerId===drag.id)drag=null;}
+  window.addEventListener('pointerup',up);window.addEventListener('pointercancel',up);
+
+  function setZ(){['A','B','C','D'].forEach(function(k){zsl[k].value=P[k][2];});}
+  function preset(cfg){P={A:cfg[0].slice(),B:cfg[1].slice(),C:cfg[2].slice(),D:cfg[3].slice()};setZ();draw();}
+  document.getElementById('pPara').onclick=function(){preset([[-150,-110,0],[150,-110,0],[150,110,0],[-150,110,0]]);};
+  document.getElementById('pTrap').onclick=function(){preset([[-90,-110,0],[90,-110,0],[170,110,0],[-170,110,0]]);};
+  document.getElementById('pSaddle').onclick=function(){preset([[-150,-110,70],[150,-110,-40],[150,110,70],[-150,110,-40]]);};
+  document.getElementById('pWild').onclick=function(){preset([[-180,-60,110],[120,-140,-90],[160,130,30],[-110,90,-60]]);};
+  function tog(id,key){var b=document.getElementById(id);b.onclick=function(){show[key]=!show[key];b.classList.toggle('on',show[key]);draw();};}
+  tog('tPos','pos');tog('tChain','chain');tog('tRul','rul');
+
+  setZ();draw();
+})();
+</script>
+</body>
+</html>
