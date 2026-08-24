@@ -9,6 +9,7 @@
   .wrap{max-width:980px;margin:0 auto;padding:14px 12px 40px;}
   h1{font-size:22px;font-weight:normal;margin:0 0 4px;letter-spacing:.02em}
   .sub{font-size:14px;color:#6a2c91;margin:0 0 10px}
+  .hint{font-size:13px;color:#b08948}
   svg{width:100%;height:auto;display:block;touch-action:none;user-select:none;-webkit-user-select:none}
   .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0}
   button{font:14px Georgia,serif;background:#fff;color:#43203f;border:1px solid #b08948;border-radius:6px;padding:6px 12px;cursor:pointer}
@@ -29,7 +30,7 @@
 <body>
 <div class="wrap">
 <h1>The twist defect — v2</h1>
-<p class="sub">corners are positions · T = A − B + C − D · the fabric diagonal bows off its chord by |T|/4 · drag corners in plan, raise them with the sliders</p>
+<p class="sub">corners are positions · T = A − B + C − D · the fabric diagonal bows off its chord by |T|/4 · drag corners in plan, raise them with the sliders · drag the background to turn the view</p>
 
 <svg id="stage" viewBox="0 0 900 640" xmlns="http://www.w3.org/2000/svg" aria-label="twisted frame with fabric surface">
   <g id="floor"></g>
@@ -61,6 +62,14 @@
   <button id="tChain" class="on">Alternating sum</button>
   <button id="tRul" class="on">Fabric</button>
 </div>
+<div class="row">
+  <span class="hint">View</span>
+  <button id="vLeft" title="turn 15° left">↶</button>
+  <button id="vRight" title="turn 15° right">↷</button>
+  <button id="vPlan">Plan</button>
+  <button id="vReset">Reset view</button>
+  <span class="hint">drag the background to rotate</span>
+</div>
 
 <div class="ledger" id="ledger"></div>
 
@@ -83,10 +92,19 @@
   var show={pos:true,chain:true,rul:true};
   var liftMode=false;
 
-  // axonometric projection
-  var c30=Math.cos(Math.PI/6),s30=Math.sin(Math.PI/6),CX=470,CY=360,K=1.0;
-  function proj(p){return [CX+K*(p[0]-p[1])*c30, CY-K*(p[0]+p[1])*s30-K*p[2]];}
-  function unproj(X,Y,z){var u=(X-CX)/(K*c30), v=-(Y-CY+K*z)/(K*s30); return [(u+v)/2,(v-u)/2,z];}
+  // orthographic camera: azimuth (turn about z) and elevation (tilt above the floor).
+  // The defaults reproduce the original 30° axonometric exactly.
+  var CX=470,CY=360,K=Math.SQRT2*Math.cos(Math.PI/6);
+  var VIEW0={az:45,el:35.2644};
+  var cam={az:VIEW0.az,el:VIEW0.el},cp,sp,ct,st;
+  function setCam(az,el){
+    cam.az=((az%360)+360)%360; cam.el=Math.max(4,Math.min(89.9,el));
+    var a=cam.az*Math.PI/180,e=cam.el*Math.PI/180;
+    cp=Math.cos(a);sp=Math.sin(a);ct=Math.cos(e);st=Math.sin(e);
+  }
+  setCam(cam.az,cam.el);
+  function proj(p){var x=p[0]*cp-p[1]*sp,y=p[0]*sp+p[1]*cp;return [CX+K*x, CY-K*(y*st+p[2]*ct)];}
+  function unproj(X,Y,z){var x=(X-CX)/K,y=(CY-Y-K*z*ct)/(K*st);return [x*cp+y*sp,-x*sp+y*cp,z];}
 
   function el(tag,attrs,parent){var e=document.createElementNS(NS,tag);for(var k in attrs)e.setAttribute(k,attrs[k]);(parent||svg).appendChild(e);return e;}
   function clear(g){while(g.firstChild)g.removeChild(g.firstChild);}
@@ -213,8 +231,29 @@
     p[0]=Math.max(-230,Math.min(230,p[0]));p[1]=Math.max(-230,Math.min(230,p[1]));
     P[drag.k]=p;liftMode=false;draw();
   });
-  function up(ev){if(drag&&ev.pointerId===drag.id){drag=null;fit();}}
+  function up(ev){
+    if(drag&&ev.pointerId===drag.id){drag=null;fit();}
+    if(orbit&&ev.pointerId===orbit.id){orbit=null;fit();}
+  }
   window.addEventListener('pointerup',up);window.addEventListener('pointercancel',up);
+
+  // rotate the view: drag anywhere that is not a corner handle
+  var orbit=null;
+  svg.addEventListener('pointerdown',function(ev){
+    if(drag||ev.target.getAttribute('cursor')==='grab')return;
+    orbit={id:ev.pointerId,x:ev.clientX,y:ev.clientY,az:cam.az,el:cam.el};ev.preventDefault();
+  });
+  window.addEventListener('pointermove',function(ev){
+    if(!orbit||ev.pointerId!==orbit.id)return;
+    var s=svg.getBoundingClientRect().width/900*2.2; // ~0.45°/px at full width
+    setCam(orbit.az-(ev.clientX-orbit.x)/s,orbit.el+(ev.clientY-orbit.y)/s);
+    draw();fit();
+  });
+  function view(az,el){setCam(az,el);draw();fit();}
+  document.getElementById('vReset').onclick=function(){view(VIEW0.az,VIEW0.el);};
+  document.getElementById('vPlan').onclick=function(){view(0,89.9);};
+  document.getElementById('vLeft').onclick=function(){view(cam.az-15,cam.el);};
+  document.getElementById('vRight').onclick=function(){view(cam.az+15,cam.el);};
 
   function setZ(){['A','B','C','D'].forEach(function(k){zsl[k].value=P[k][2];});}
   function preset(cfg){liftMode=false;P={A:cfg[0].slice(),B:cfg[1].slice(),C:cfg[2].slice(),D:cfg[3].slice()};setZ();draw();fit();}
