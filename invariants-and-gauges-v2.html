@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Invariants and gauges — one line, three rulers (v2)</title>
+<style>
+  html,body{margin:0;background:#faf6ef;color:#43203f;font-family:Georgia,"Times New Roman",serif}
+  .wrap{max-width:1180px;margin:0 auto;padding:14px 12px 40px}
+  h1{font-size:22px;font-weight:normal;margin:4px 0 2px;letter-spacing:.2px}
+  h1 span{color:#6a2c91}
+  .sub{font-size:14px;color:#6a5a68;margin:0 0 10px}
+  .controls{display:flex;flex-wrap:wrap;gap:10px 22px;align-items:center;font-size:13px;margin:6px 0 8px}
+  .controls label{display:inline-flex;align-items:center;gap:6px}
+  input[type=range]{width:150px;accent-color:#6a2c91}
+  button{font:13px Georgia,serif;color:#43203f;background:#fff;border:1px solid #b08948;border-radius:4px;padding:3px 9px;cursor:pointer}
+  button:hover{background:#f3ead8}
+  button.on{background:#43203f;color:#faf6ef;border-color:#43203f}
+  button.s3{font-family:"Times New Roman",serif;font-style:italic;min-width:38px}
+  .def{font-size:13.5px;line-height:1.5;background:#fff;border:1px solid #e3d9c6;border-left:4px solid #b08948;border-radius:4px;padding:8px 12px;margin:2px 0 8px;max-width:1150px}
+  .def b{font-weight:normal;font-family:Georgia,serif}
+  .def .live{color:#6a5a68;font-size:12.5px}
+  .cast{display:grid;grid-template-columns:1fr 1fr;gap:6px 24px;font-size:13.5px;line-height:1.5;margin:12px 0 0;max-width:1150px}
+  .cast div{padding:6px 10px;border-top:1px solid #e3d9c6}
+  .cast b{font-weight:normal;display:block;margin-bottom:2px}
+  @media (max-width:760px){.cast{grid-template-columns:1fr}}
+  .note{font-size:14px;line-height:1.5;max-width:900px;margin:14px 0 0}
+  .note b{color:#6a2c91;font-weight:normal}
+  .note i.t{color:#177f75;font-style:normal}
+  .note i.c{color:#6a2c91;font-style:normal}
+  .note i.g{color:#3d8f3d;font-style:normal}
+  svg{display:block;width:100%;height:auto;touch-action:none}
+  svg text{font-family:Georgia,serif}
+  .h{cursor:grab}
+  code{font-family:Menlo,Consolas,monospace;font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>Invariants and gauges — <span>one line of the congruence, three rulers</span></h1>
+<p class="sub">Section along one ray. Drag the two slits, the glide station and the probe. The cross-ratio along the line is the same in every ruler; where each ruler puts the plane at infinity is the gauge.</p>
+
+<div class="controls">
+  <label>back wall <input type="range" id="zBack" min="120" max="330" value="280"> <span id="zBackV"></span></label>
+  <label>depth gauge k <input type="range" id="kg" min="30" max="300" value="100"> <span id="kgV"></span></label>
+  <label><input type="checkbox" id="pin" checked> pin the surface</label>
+  <span>labels:</span>
+  <button class="s3" id="b_omega" title="ω = 1/(1−x)">ω</button>
+  <button class="s3" id="b_omega2" title="ω² = 1 − 1/x">ω²</button>
+  <button class="s3" id="b_tau" title="τ = 1 − x">τ</button>
+  <button class="s3" id="b_rho" title="ρ = 1/x">ρ</button>
+  <button class="s3" id="b_third" title="x/(x−1)">third</button>
+  <button id="b_reset">standard</button>
+  <span>presets:</span>
+  <button id="p_rig">rig</button>
+  <button id="p_f1">F₁ far out</button>
+  <button id="p_f2">F₂ far out</button>
+  <button id="p_fuse">fuse the slits</button>
+</div>
+<div class="def" id="def"></div>
+<svg id="stage" viewBox="0 0 1180 860" xmlns="http://www.w3.org/2000/svg" aria-label="Invariants and gauges instrument">
+  <!-- ===== band 1: the physical line ===== -->
+  <text x="40" y="34" font-size="14" fill="#43203f">1 · the line, physically — <tspan fill="#6a5a68">picture plane at z = 0, scene to the right, slits and station on the viewer side</tspan></text>
+  <rect id="slab" x="0" y="52" width="0" height="120" fill="#3d8f3d" opacity="0.07"/>
+  <line id="axis" x1="40" y1="112" x2="1130" y2="112" stroke="#43203f" stroke-width="1.2"/>
+  <polygon points="1130,112 1120,107 1120,117" fill="#43203f"/>
+  <text x="1090" y="100" font-size="13" fill="#3d8f3d">plane at ∞ →</text>
+  <line id="pp" x1="0" y1="56" x2="0" y2="168" stroke="#3d8f3d" stroke-width="2"/>
+  <text id="ppL" x="0" y="184" font-size="12" fill="#3d8f3d" text-anchor="middle">picture plane · S = F</text>
+  <line id="bw" x1="0" y1="70" x2="0" y2="154" stroke="#3d8f3d" stroke-width="1" stroke-dasharray="4 3"/>
+  <text id="bwL" x="0" y="184" font-size="12" fill="#3d8f3d" text-anchor="middle">back wall</text>
+  <g id="ticksCS"></g><g id="ticksRe"></g><g id="ticksTu"></g>
+  <text x="44" y="82" font-size="11" fill="#6a2c91">cross-slit levels x = j/8</text>
+  <text x="44" y="136" font-size="11" fill="#177f75">glide Reach λ = j/8</text>
+  <text x="44" y="156" font-size="11" fill="#177f75" opacity="0.7">glide Turn μ = j/8</text>
+  <!-- handles (persistent) -->
+  <g id="hF1" class="h"><circle r="9" fill="#c0322b"/><text y="-14" font-size="13" fill="#c0322b" text-anchor="middle">F₁</text></g>
+  <g id="hF2" class="h"><circle r="9" fill="#2a5db0"/><text y="-14" font-size="13" fill="#2a5db0" text-anchor="middle">F₂</text></g>
+  <g id="hSt" class="h"><rect x="-8" y="-8" width="16" height="16" fill="#177f75" transform="rotate(45)"/><text y="26" font-size="13" fill="#177f75" text-anchor="middle">station</text></g>
+  <g id="hP" class="h"><circle r="9" fill="#faf6ef" stroke="#43203f" stroke-width="2.5"/><text y="-14" font-size="13" fill="#43203f" text-anchor="middle">P</text></g>
+  <text id="zRead" x="1130" y="150" font-size="12" fill="#43203f" text-anchor="end"></text>
+
+  <!-- ===== band 2: three rulers in their own coordinate ===== -->
+  <text x="40" y="222" font-size="14" fill="#43203f">2 · the same line, three graduations — <tspan fill="#6a5a68">each ruler drawn in its own coordinate; three pins each; watch where the plane at ∞ lands</tspan></text>
+  <g id="rulers"></g>
+
+  <!-- ===== band 3: labels up to S3 / the depth gauge ===== -->
+  <text x="40" y="472" font-size="14" fill="#43203f">3 · names of the pins, up to S₃</text>
+  <g id="labels"></g>
+  <text x="620" y="472" font-size="14" fill="#43203f">4 · the depth gauge diag(λI, µI)</text>
+  <g id="gauge"></g>
+
+  <!-- ===== band 4: conversion ===== -->
+  <text x="40" y="632" font-size="14" fill="#43203f">5 · the conversion — <tspan fill="#6a5a68">calibrated depth ν = z / R, R = √(Z₁Z₂); transport ν ↦ 1/ν, read on the other channel</tspan></text>
+  <g id="conv"></g>
+
+  <!-- ===== ledger ===== -->
+  <text x="40" y="722" font-size="14" fill="#43203f">ledger</text>
+  <g id="ledger"></g>
+</svg>
+
+
+<div class="cast">
+<div><b style="color:#43203f">P — the probe</b>The one free point on the line: a scene point at depth z, the fourth argument in every cross-ratio. The three pins belong to the apparatus; P belongs to the scene. It has no image of its own — every point of the line pierces the picture plane at the same footprint S, which is why band 4 can slide P without the image moving. P is where the invariant is tested (four probe positions, one cross-ratio on every ruler) and what the conversion in band 5 is applied to.</div>
+<div><b style="color:#177f75">the station</b>The point the Turn graduation sends to ∞ — the third pin, and the only one that is not a mark on the drawing. With F → 0 and the plane at infinity → 1, the station is the remaining choice; at z = −D it gives μ = z/(z + D), harmonic steps k/(k+1), the plane at infinity reached at 1, the station itself unreachable. In perspective it is the eye, D its distance from the picture plane. Reach has no station: its ∞-pin is the plane at infinity itself, so no finite point is out of reach — which is why Reach can mark equal steps and Turn cannot.</div>
+<div><b style="color:#3d8f3d">S = F — the surface pin</b>Where the line pierces the picture plane. Screen point on the cross-slit side, footprint on the glide side; one point, two names. Both constructions use it to break the depth gauge (Definition P). Its label (0 here) is a convention — band 3.</div>
+<div><b><span style="color:#c0322b">F₁</span>, <span style="color:#2a5db0">F₂</span> — the slit feet</b>Where the line pierces the two slits. The cross-slit's other two pins, placed by optics rather than chosen. Under the tabled pairing F₂ plays the station and F₁ plays the plane at infinity; send F₁ far out and the identification becomes literal — the surviving slit is the station, x(z) → z/(z + |Z₂|). Fuse them and you have the eye: the pinhole's station in the classical sense.</div>
+<div><b style="color:#3d8f3d">◆ the plane at infinity</b>The fourth distinguished point of the line, and the one whose status differs by construction: a pin for both glide gauges (Reach sends it to ∞, Turn to 1), a probe for the cross-slit — which is why its image 1 − Z₂/Z₁ moves with the slits while P stays free.</div>
+<div><b style="color:#6a5a68">station off the seam</b>Sheet 38 pulls the station apart into two armature axes, so in the document "station" is per channel: each depth line has its own pole, and in three dimensions the poles trace the two vanishing axes — the glide's counterparts of the two slits. Sheet 39 lays them off beyond the back wall; the viewer-side placement here is the mirror image of the same point, chosen so μ runs cleanly through [0, 1).</div>
+</div>
+
+<div class="note">
+<p><b>What to look for.</b> In band 1 every colored tick is a level mark — a place where one ruler's coordinate reads j/8. <i class="t">Reach</i> ticks are equally spaced in z because Reach pins ∞ at ∞ (affine). <i class="c">Cross-slit</i> and <i class="t">Turn</i> ticks crowd toward the right because each pins ∞ at a finite mark (Möbius). All three are three-pin coordinates on the same line, so in band 2 the cross-ratio of any four depths reads the same on every ruler — that is the invariant. What differs is the <i class="g">green diamond</i>: the image of the plane at infinity. Reach sends it off the end; Turn puts it at 1 by fiat; the cross-slit puts it at 1 − Z₂/Z₁, wherever the slits happen to be — the physical rig has no say.</p>
+<p><b>The two pushbroom limits are the two glide gauges.</b> Press <i>F₂ far out</i>: the ∞-pin walks onto the plane at infinity, the cross-slit ticks straighten into equal steps and the diamond leaves through the right end — Reach. Press <i>F₁ far out</i>: the 1-pin walks onto the plane at infinity, the diamond settles at 1, and x(z) becomes z/(z + |Z₂|) — Turn, with the surviving slit as the station (ledger row 5 measures the match live). So the pairing F₁ ↔ plane-at-∞, F₂ ↔ station is what the rig itself does in the limit. <i>Fuse the slits</i> is the pinhole: F₁ = F₂, the formula reads 1 everywhere and the cross-slit ruler collapses.</p>
+<p><b>Names.</b> The cross-slit's pins come out of the standard convention as S → 1, F₂ → 0, F₁ → ∞. Band 3 lets you apply any element of S₃ to the names; the value of P moves by the same Möbius map, and the ledger checks it. Press <i>ω²</i> from standard to put the surface at 0 (the document's table). Once the surface sits at 0, only one element besides the identity keeps it there — <i>third</i>, x ↦ x/(x−1) — and it swaps the names of F₁ and F₂. That single switch is the whole of the pairing question.</p>
+<p><b>Gauge.</b> Band 4 is the kernel: with the surface unpinned, k slides P along the ray and drags the surface mark S to 1 − k while F₁ and F₂ stay put — the image is unchanged, the depth is not. Pin the surface and k is forced to 1. Band 5 is the transport from the six-step check: one cross-channel inversion, product 1.</p>
+</div>
+</div>
+<script>
+// GM — the math of "invariants and gauges" on one line of the congruence.
+// Section convention (the-assembly): picture plane at z = 0, scene at z > 0,
+// slits and the glide station on the viewer side, z < 0.
+var GM = (function(){
+  var INF = Infinity;
+  function cr(a,b,c,d){ // (a,b;c,d) = ((c-a)(d-b))/((d-a)(c-b)), standard convention
+    var n=(c-a)*(d-b), m=(d-a)*(c-b);
+    if (m===0) return n===0 ? NaN : (n>0?INF:-INF);
+    return n/m;
+  }
+  // --- cross-slit, standard aperture ratio AR(P) = (F1,F2;S,P), S = 0
+  function AR(z,Z1,Z2){ return cr(Z1,Z2,0,z); }
+  // the 3-cycle relabelling AR -> x with S->0, F1->1, F2->inf : x = 1 - 1/AR  (this is omega^2 on the board)
+  function omega3(v){ return v===INF||v===-INF ? 1 : (v===0 ? INF : 1-1/v); }
+  // same coordinate, closed form (avoids INF arithmetic): x(z) = z (Z1-Z2) / (Z1 (z-Z2))
+  function xCS(z,Z1,Z2){ var m=Z1*(z-Z2); return m===0? INF : z*(Z1-Z2)/m; }
+  function xInfPlane(Z1,Z2){ return 1 - Z2/Z1; }          // image of the plane at infinity
+  // --- glide Reach: lambda = z / zBack, three pins 0, back wall -> 1, inf -> inf
+  function lamReach(z,zBack){ return z/zBack; }
+  // --- glide Turn: mu with 0->0, inf-plane->1, station (z = -D) -> inf : mu = z/(z+D)
+  function muTurn(z,D){ var m=z+D; return m===0? INF : z/m; }
+  // inverse maps (coordinate -> z)
+  function zOfX(x,Z1,Z2){ var m=(Z1-Z2)-x*Z1; return m===0? INF : x*Z1*(-Z2)/m; }
+  // derive: x = z(Z1-Z2)/(Z1(z-Z2)) => x Z1 z - x Z1 Z2 = z(Z1-Z2) => z(xZ1 - (Z1-Z2)) = xZ1Z2 => z = xZ1Z2/(xZ1-(Z1-Z2))
+  function zOfXcheck(x,Z1,Z2){ var m=x*Z1-(Z1-Z2); return m===0? INF : x*Z1*Z2/m; }
+  function zOfMu(mu,D){ return mu===1? INF : mu*D/(1-mu); }
+  function zOfLam(l,zBack){ return l*zBack; }
+  // --- the depth gauge diag(lambda I, mu I): fixes F1, F2, slides along the ray.
+  // In x-coordinates (F1 -> 1, F2 -> inf) it is x -> 1 + k (x - 1); S (x=0) moves to 1-k.
+  function gaugeX(x,k){ return 1 + k*(x-1); }
+  // --- the anharmonic group on labels / values
+  var S3 = {
+    id:  function(v){ return v; },
+    tau: function(v){ return v===INF? INF : 1-v; },                 // Complement
+    rho: function(v){ return v===0? INF : (v===INF? 0 : 1/v); },     // Reciprocal
+    third: function(v){ return v===INF? 1 : (v===1? INF : v/(v-1)); },// Third: fixes 0, swaps 1 <-> inf
+    omega: function(v){ return v===1? INF : (v===INF? 0 : 1/(1-v)); }, // 3-cycle 1->inf->0->1 (board's omega = rho.tau)
+    omega2: function(v){ return v===0? INF : (v===INF? 1 : 1-1/v); }  // its inverse, the relabelling S:1->0
+  };
+  // --- the conversion: calibrated depth nu = z/R, R = sqrt(|Z1 Z2|); transport nu -> 1/nu
+  function R(Z1,Z2){ return Math.sqrt(Math.abs(Z1*Z2)); }
+  function nu(z,Z1,Z2){ return z/R(Z1,Z2); }
+  return {cr:cr,AR:AR,omega3:omega3,xCS:xCS,xInfPlane:xInfPlane,lamReach:lamReach,muTurn:muTurn,
+          zOfX:zOfXcheck,zOfMu:zOfMu,zOfLam:zOfLam,gaugeX:gaugeX,S3:S3,R:R,nu:nu,INF:INF};
+})();
+// ---------- state ----------
+var ST = { Z1:-160, Z2:-90, D:120, zP:95, zBack:280, k:1, pinned:true, lab:'id' };
+var ZMIN=-270, ZMAX=340, PX0=40, PX1=1110;
+function X(z){ return PX0 + (z-ZMIN)/(ZMAX-ZMIN)*(PX1-PX0); }
+function zOfPx(px){ return ZMIN + (px-PX0)/(PX1-PX0)*(ZMAX-ZMIN); }
+var svg=document.getElementById('stage');
+function $(id){ return document.getElementById(id); }
+function el(tag,attrs,parent){ var e=document.createElementNS('http://www.w3.org/2000/svg',tag); for(var a in attrs) e.setAttribute(a,attrs[a]); if(parent) parent.appendChild(e); return e; }
+function txt(x,y,s,attrs,parent){ var t=el('text',Object.assign({x:x,y:y,'font-size':12,fill:'#43203f'},attrs||{}),parent); t.textContent=s; return t; }
+function fmt(v,d){ if(v===Infinity) return '∞'; if(v===-Infinity) return '−∞'; if(v!==v) return '—'; d=d===undefined?3:d; var s=v.toFixed(d); return s.replace('-','−'); }
+function sci(v){ return v===0? '0' : v.toExponential(1).replace('-','−'); }
+function isPinhole(){ return Math.abs(ST.Z1-ST.Z2)<1e-9; }
+
+// ---------- S3 bookkeeping ----------
+var S3names=['id','tau','rho','third','omega','omega2'];
+var S3glyph={id:'id',tau:'τ',rho:'ρ',third:'third',omega:'ω',omega2:'ω²'};
+function s3compose(g,h){ // element equal to v -> g(h(v))
+  var probes=[0.3,2.5];
+  for(var i=0;i<S3names.length;i++){ var e=GM.S3[S3names[i]]; var okAll=true;
+    for(var j=0;j<probes.length;j++){ if(Math.abs(e(probes[j])-GM.S3[g](GM.S3[h](probes[j])))>1e-12){okAll=false;break;} }
+    if(okAll) return S3names[i]; }
+  return 'id';
+}
+function labName(v){ return v===Infinity? '∞' : (v===0?'0':(v===1?'1':fmt(v,2))); }
+
+// ---------- band 1 ----------
+var handles={};
+function placeHandle(g,z,y){ var px=X(Math.max(z,ZMIN)); g.setAttribute('transform','translate('+px+','+y+')'); }
+function drawBand1(){
+  var slab=$('slab'); slab.setAttribute('x',X(0)); slab.setAttribute('width',X(ST.zBack)-X(0));
+  $('pp').setAttribute('x1',X(0)); $('pp').setAttribute('x2',X(0)); $('ppL').setAttribute('x',X(0));
+  $('bw').setAttribute('x1',X(ST.zBack)); $('bw').setAttribute('x2',X(ST.zBack)); $('bwL').setAttribute('x',X(ST.zBack));
+  placeHandle($('hF1'),ST.Z1,112); placeHandle($('hF2'),ST.Z2,112); placeHandle($('hSt'),-ST.D,112); placeHandle($('hP'),ST.zP,112);
+  $('hF1').querySelector('text').textContent = ST.Z1<ZMIN ? '◂ F₁ '+fmt(ST.Z1,0) : 'F₁';
+  $('hF2').querySelector('text').textContent = ST.Z2<ZMIN ? '◂ F₂ '+fmt(ST.Z2,0) : 'F₂';
+  // level ticks
+  var tc=$('ticksCS'), tr=$('ticksRe'), tt=$('ticksTu'); tc.innerHTML=''; tr.innerHTML=''; tt.innerHTML='';
+  for(var j=0;j<=8;j++){ var c=j/8;
+    if(!isPinhole()){ var zx=GM.zOfX(c,ST.Z1,ST.Z2); if(isFinite(zx)&&zx>=0&&zx<=ZMAX) el('line',{x1:X(zx),y1:88,x2:X(zx),y2:104,stroke:'#6a2c91','stroke-width':j%4===0?2:1},tc); }
+    var zr=GM.zOfLam(c,ST.zBack); if(zr<=ZMAX) el('line',{x1:X(zr),y1:120,x2:X(zr),y2:132,stroke:'#177f75','stroke-width':j%4===0?2:1},tr);
+    var zt=GM.zOfMu(c,ST.D); if(isFinite(zt)&&zt<=ZMAX) el('line',{x1:X(zt),y1:140,x2:X(zt),y2:152,stroke:'#177f75','stroke-width':j%4===0?2:1,'stroke-dasharray':'2 2'},tt);
+  }
+  $('zRead').textContent='z(P) = '+fmt(ST.zP,1)+'   Z₁ = '+fmt(ST.Z1,0)+'   Z₂ = '+fmt(ST.Z2,0)+'   station = '+fmt(-ST.D,0);
+}
+
+// ---------- band 2: rulers ----------
+var CMIN=-0.35, CMAX=1.65, RX0=190, RX1=1040;
+function RX(c){ return RX0 + (c-CMIN)/(CMAX-CMIN)*(RX1-RX0); }
+function ruler(parent,y,color,name,pins,valP,valInf,ticksOK,dash){
+  var g=el('g',{},parent);
+  txt(40,y-14,name,{fill:color,'font-size':13},g);
+  txt(40,y+4,pins.text,{fill:'#6a5a68','font-size':11},g);
+  el('line',{x1:RX(CMIN),y1:y,x2:RX(CMAX)+22,y2:y,stroke:color,'stroke-width':1.6,'stroke-dasharray':dash||'none'},g);
+  el('polygon',{points:(RX(CMAX)+22)+','+y+' '+(RX(CMAX)+12)+','+(y-5)+' '+(RX(CMAX)+12)+','+(y+5),fill:color},g);
+  txt(RX(CMAX)+26,y+4,'∞ = '+pins.inf,{fill:color,'font-size':12},g);
+  if(ticksOK) for(var j=-2;j<=13;j++){ var c=j/8; if(c<CMIN||c>CMAX) continue; el('line',{x1:RX(c),y1:y-5,x2:RX(c),y2:y+5,stroke:color,'stroke-width':(j===0||j===8)?2:0.8},g); }
+  // pins 0 and 1
+  [[0,pins.zero],[1,pins.one]].forEach(function(pr){ el('circle',{cx:RX(pr[0]),cy:y,r:4,fill:color},g); txt(RX(pr[0]),y+20,pr[0]+' = '+pr[1],{fill:color,'font-size':11,'text-anchor':'middle'},g); });
+  // plane at infinity
+  function mark(v,shape,fill,label,dy){
+    var cx, over='';
+    if(v===Infinity||v>CMAX){ cx=RX(CMAX)+8; over=' →'; } else if(v===-Infinity||v<CMIN){ cx=RX(CMIN)-8; over=' ←'; } else cx=RX(v);
+    if(shape==='diamond') el('rect',{x:cx-6,y:y-6,width:12,height:12,fill:fill,transform:'rotate(45 '+cx+' '+y+')'},g);
+    else el('circle',{cx:cx,cy:y,r:6,fill:'#faf6ef',stroke:fill,'stroke-width':2.2},g);
+    txt(cx,y+dy,label+' '+fmt(v,3)+over,{fill:fill,'font-size':11,'text-anchor':'middle'},g);
+  }
+  if(!(valInf!==valInf)) mark(valInf,'diamond','#3d8f3d','∞-plane at',-12);
+  if(!(valP!==valP)) mark(valP,'dot','#43203f','P at',36);
+  return g;
+}
+function drawBand2(){
+  var R=$('rulers'); R.innerHTML='';
+  var ph=isPinhole();
+  var xP = ph? NaN : GM.xCS(ST.zP,ST.Z1,ST.Z2), xInf = ph? NaN : GM.xInfPlane(ST.Z1,ST.Z2);
+  ruler(R,268,'#6a2c91','cross-slit · x = ω²(AR)',{text:ph?'pinhole: F₁ = F₂, AR ≡ 1 — ruler collapsed':'pins fixed by optics',zero:'S',one:'F₁',inf:'F₂'},xP,xInf,!ph);
+  ruler(R,340,'#177f75','glide Reach · λ = z / back wall',{text:'∞ pinned at ∞ · equal steps',zero:'F',one:'back wall',inf:'∞-plane'},GM.lamReach(ST.zP,ST.zBack),Infinity,true);
+  ruler(R,412,'#177f75','glide Turn · μ = z / (z + D)',{text:'∞ pinned at 1 · harmonic progression',zero:'F',one:'∞-plane',inf:'station'},GM.muTurn(ST.zP,ST.D),1,true,'6 3');
+}
+
+// ---------- band 3: labels ----------
+function drawBand3(){
+  var L=$('labels'); L.innerHTML='';
+  var e=GM.S3[ST.lab];
+  var names=[['surface S',e(1),'#3d8f3d'],['F₁',e(Infinity),'#c0322b'],['F₂',e(0),'#2a5db0']];
+  names.forEach(function(n,i){ var x=60+i*150; el('rect',{x:x,y:490,width:130,height:52,rx:6,fill:'#fff',stroke:n[2],'stroke-width':1.4},L);
+    txt(x+65,510,n[0],{'text-anchor':'middle',fill:n[2],'font-size':12},L);
+    txt(x+65,536,'→ '+labName(n[1]),{'text-anchor':'middle',fill:'#43203f','font-size':18},L); });
+  txt(60,566,'current relabelling: '+S3glyph[ST.lab]+'   (standard convention gives S→1, F₂→0, F₁→∞)',{fill:'#6a5a68','font-size':12},L);
+  var at0 = e(1)===0;
+  txt(60,588,at0?'surface at 0 — stabilizer {id, third}: only "third" keeps it there, and it swaps the names of F₁ and F₂':'surface not at 0 — press ω² from standard to put it there',{fill:at0?'#b08948':'#6a5a68','font-size':12},L);
+  var ar = isPinhole()? NaN : GM.AR(ST.zP,ST.Z1,ST.Z2);
+  txt(60,608,'AR(P) = '+fmt(ar,4)+'   under these names: '+fmt(isPinhole()?NaN:e(ar),4)+'   (the value moves by the same Möbius map as the names)',{fill:'#43203f','font-size':12},L);
+}
+
+// ---------- band 4: the gauge ----------
+var GX0=640, GX1=1080, GMIN=-1.4, GMAX=2.3;
+function GX(c){ return GX0 + (c-GMIN)/(GMAX-GMIN)*(GX1-GX0); }
+function drawBand4(){
+  var G=$('gauge'); G.innerHTML='';
+  var y=520, k=ST.pinned?1:ST.k;
+  el('line',{x1:GX(GMIN),y1:y,x2:GX(GMAX)+20,y2:y,stroke:'#6a2c91','stroke-width':1.4},G);
+  el('polygon',{points:(GX(GMAX)+20)+','+y+' '+(GX(GMAX)+10)+','+(y-5)+' '+(GX(GMAX)+10)+','+(y+5),fill:'#2a5db0'},G);
+  txt(GX(GMAX)+24,y+4,'F₂ = ∞',{fill:'#2a5db0','font-size':11},G);
+  el('circle',{cx:GX(1),cy:y,r:5,fill:'#c0322b'},G); txt(GX(1),y+20,'F₁ = 1',{fill:'#c0322b','font-size':11,'text-anchor':'middle'},G);
+  var xP=isPinhole()?0.4:GM.xCS(ST.zP,ST.Z1,ST.Z2); if(!isFinite(xP)||Math.abs(xP)>3) xP=0.4;
+  var s=GM.gaugeX(0,k), p=GM.gaugeX(xP,k);
+  el('circle',{cx:GX(0),cy:y,r:4,fill:'none',stroke:'#3d8f3d','stroke-dasharray':'2 2'},G);
+  el('circle',{cx:GX(Math.max(GMIN,Math.min(GMAX,s))),cy:y,r:5,fill:'#3d8f3d'},G);
+  txt(GX(Math.max(GMIN,Math.min(GMAX,s))),y-12,'S → '+fmt(s,2),{fill:'#3d8f3d','font-size':11,'text-anchor':'middle'},G);
+  el('circle',{cx:GX(Math.max(GMIN,Math.min(GMAX,xP))),cy:y,r:5,fill:'none',stroke:'#43203f','stroke-dasharray':'2 2'},G);
+  el('circle',{cx:GX(Math.max(GMIN,Math.min(GMAX,p))),cy:y,r:6,fill:'#faf6ef',stroke:'#43203f','stroke-width':2.2},G);
+  txt(GX(Math.max(GMIN,Math.min(GMAX,p))),y+34,'P → '+fmt(p,2),{fill:'#43203f','font-size':11,'text-anchor':'middle'},G);
+  txt(640,566,'x ↦ 1 + k (x − 1),  k = '+fmt(k,2)+' — fixes F₁ and F₂, slides everything else along the ray',{fill:'#6a5a68','font-size':12},G);
+  txt(640,588,ST.pinned?'surface pinned: k forced to 1 — the gauge is dead, depth is recovered':'surface unpinned: image point unchanged (still S), depth coordinate free — S itself drifts to 1 − k',{fill:ST.pinned?'#b08948':'#c0322b','font-size':12},G);
+}
+
+// ---------- band 5: conversion ----------
+function drawBand5(){
+  var C=$('conv'); C.innerHTML='';
+  var R=GM.R(ST.Z1,ST.Z2), nu=GM.nu(ST.zP,ST.Z1,ST.Z2), nud=1/nu;
+  txt(60,662,'R = √|Z₁Z₂| = '+fmt(R,2),{fill:'#b08948','font-size':13},C);
+  txt(260,662,'νᵤ = z(P)/R = '+fmt(nu,4),{fill:'#c0322b','font-size':13},C);
+  txt(500,662,'νᵥ† = 1/νᵤ = '+fmt(nud,4),{fill:'#2a5db0','font-size':13},C);
+  txt(760,662,'νᵤ · νᵥ† = '+fmt(nu*nud,12),{fill:'#43203f','font-size':13},C);
+  // little mirror-circle strip: 0 ... R ... with nu and 1/nu as inverse points in units of R
+  var y=688, x0=60, x1=1100, cmax=3.2; function CX(v){ return x0+(Math.min(v,cmax)/cmax)*(x1-x0); }
+  el('line',{x1:x0,y1:y,x2:x1,y2:y,stroke:'#b08948','stroke-width':1},C);
+  el('circle',{cx:CX(1),cy:y,r:4,fill:'#b08948'},C); txt(CX(1),y+16,'ν = 1 (the mirror)',{fill:'#b08948','font-size':10,'text-anchor':'middle'},C);
+  el('circle',{cx:CX(nu),cy:y,r:5,fill:'#c0322b'},C); el('circle',{cx:CX(nud),cy:y,r:5,fill:'#2a5db0'},C);
+  el('path',{d:'M'+CX(nu)+' '+y+' Q '+((CX(nu)+CX(nud))/2)+' '+(y-22)+' '+CX(nud)+' '+y,fill:'none',stroke:'#43203f','stroke-width':1,'stroke-dasharray':'3 2'},C);
+}
+
+// ---------- ledger ----------
+function drawLedger(){
+  var Lg=$('ledger'); Lg.innerHTML='';
+  var ph=isPinhole();
+  var q=[0.1,0.3,0.55,0.85].map(function(f){return f*ST.zBack;});
+  var crz=GM.cr(q[0],q[1],q[2],q[3]);
+  var crx=ph?NaN:GM.cr.apply(null,q.map(function(z){return GM.xCS(z,ST.Z1,ST.Z2);}));
+  var crl=GM.cr.apply(null,q.map(function(z){return GM.lamReach(z,ST.zBack);}));
+  var crm=GM.cr.apply(null,q.map(function(z){return GM.muTurn(z,ST.D);}));
+  var spread=ph?NaN:Math.max(Math.abs(crx-crz),Math.abs(crl-crz),Math.abs(crm-crz));
+  var e=GM.S3[ST.lab];
+  var ar=ph?NaN:GM.AR(ST.zP,ST.Z1,ST.Z2), xP=ph?NaN:GM.xCS(ST.zP,ST.Z1,ST.Z2);
+  var dRelabel=ph?NaN:Math.abs(GM.S3.omega2(ar)-xP);
+  var kk=ST.zP/ST.D, dTurn=Math.abs(GM.muTurn(ST.zP,ST.D)-kk/(kk+1));
+  var dInf=ph?NaN:Math.abs(GM.xCS(1e9,ST.Z1,ST.Z2)-GM.xInfPlane(ST.Z1,ST.Z2));
+  var samp=[0.2,0.4,0.6,0.8].map(function(f){return f*ST.zBack;});
+  var gapTurn=0, aff=0;
+  if(!ph){ samp.forEach(function(z){ gapTurn=Math.max(gapTurn,Math.abs(GM.xCS(z,ST.Z1,ST.Z2)-GM.muTurn(z,-ST.Z2))); });
+    var a=GM.xCS(samp[0],ST.Z1,ST.Z2),b=GM.xCS(samp[1],ST.Z1,ST.Z2),c=GM.xCS(samp[2],ST.Z1,ST.Z2); aff=Math.abs(c-2*b+a); }
+  var k=ST.pinned?1:ST.k;
+  var nu=GM.nu(ST.zP,ST.Z1,ST.Z2), dConv=Math.abs(nu*(1/nu)-1);
+  var rows=[
+    ['invariant','cross-ratio of four depths on z / x / λ / μ:  '+fmt(crz,5)+' / '+fmt(crx,5)+' / '+fmt(crl,5)+' / '+fmt(crm,5),ph?'—':'spread '+sci(spread),ph?null:spread<1e-12],
+    ['names','x = ω²(AR) at P',ph?'—':'drift '+sci(dRelabel),ph?null:dRelabel<1e-12],
+    ['Turn law','μ = k/(k+1), k = z/D  (v1\'s "forced law" is the Turn gauge)','drift '+sci(dTurn),dTurn<1e-14],
+    ['∞-plane','x(∞-plane) = 1 − Z₂/Z₁ = '+fmt(ph?NaN:GM.xInfPlane(ST.Z1,ST.Z2),4),ph?'—':'residual '+sci(dInf),ph?null:dInf<1e-6],
+    ['limits','cross-slit vs Turn(station = F₂): gap '+(ph?'—':fmt(gapTurn,4))+'   ·   affine defect (2nd difference): '+(ph?'—':sci(aff)),'meters, not checks — both → 0 only in their pushbroom limit',null],
+    ['gauge','S ↦ 1 − k = '+fmt(1-k,3)+(ST.pinned?'  (pinned ⇒ k = 1)':'  (unpinned)'),ST.pinned?'kernel broken':'kernel live',ST.pinned],
+    ['conversion','νᵤ · νᵥ† = 1','drift '+sci(dConv),dConv<1e-14]
+  ];
+  rows.forEach(function(r,i){ var y=744+i*17;
+    txt(40,y,r[0],{fill:'#6a5a68','font-size':11},Lg); txt(120,y,r[1],{fill:'#43203f','font-size':11.5},Lg);
+    var st=r[3]; var col= st===null?'#6a5a68':(st?'#3d8f3d':'#c0322b');
+    txt(1130,y,r[2],{fill:col,'font-size':11,'text-anchor':'end'},Lg); });
+}
+
+function drawAll(){ drawBand1(); drawBand2(); drawBand3(); drawBand4(); drawBand5(); drawLedger(); drawDef();
+  $('zBackV').textContent=ST.zBack; $('kgV').textContent=(ST.pinned?1:ST.k).toFixed(2); $('kg').disabled=ST.pinned; }
+
+// ---------- controls ----------
+$('zBack').addEventListener('input',function(){ ST.zBack=+this.value; if(ST.zP>ST.zBack) ST.zP=ST.zBack; drawAll(); });
+$('kg').addEventListener('input',function(){ ST.k=this.value/100; drawAll(); });
+$('pin').addEventListener('change',function(){ ST.pinned=this.checked; drawAll(); });
+['omega','omega2','tau','rho','third'].forEach(function(n){ $('b_'+n).addEventListener('click',function(){ ST.lab=s3compose(n,ST.lab); drawAll(); }); });
+$('b_reset').addEventListener('click',function(){ ST.lab='id'; drawAll(); });
+$('p_rig').addEventListener('click',function(){ ST.Z1=-160; ST.Z2=-90; ST.D=120; drawAll(); });
+$('p_f1').addEventListener('click',function(){ ST.Z1=-20000; ST.Z2=-90; drawAll(); });
+$('p_f2').addEventListener('click',function(){ ST.Z1=-160; ST.Z2=-20000; drawAll(); });
+$('p_fuse').addEventListener('click',function(){ ST.Z1=-120; ST.Z2=-120; drawAll(); });
+
+// ---------- definition card: shows the definition of the last-touched handle ----------
+var DEFS={
+  hP:function(){ return '<b>P — the probe.</b> The one free point on the line, at depth z from the picture plane; the fourth argument in every cross-ratio. Not a pin: the pins belong to the apparatus, P to the scene. <span class="live">Now z = '+fmt(ST.zP,1)+' → x = '+fmt(isPinhole()?NaN:GM.xCS(ST.zP,ST.Z1,ST.Z2),3)+', λ = '+fmt(GM.lamReach(ST.zP,ST.zBack),3)+', μ = '+fmt(GM.muTurn(ST.zP,ST.D),3)+'. Its image is S whatever z is.</span>'; },
+  hSt:function(){ return '<b>the station.</b> The point the Turn graduation sends to ∞ — the third pin after F → 0 and the plane at infinity → 1; in perspective, the eye. <span class="live">Now at z = '+fmt(-ST.D,0)+': μ = z/(z + '+fmt(ST.D,0)+'), μ(station) = ∞, μ(∞-plane) = 1. Under the pairing it corresponds to F₂; send F₁ far out and F₂ becomes the station outright (ledger row 5). Reach has no station — its ∞-pin is the plane at infinity.</span>'; },
+  hF1:function(){ return '<b>F₁ — first slit foot.</b> Where the line pierces the first slit; the cross-slit\'s 1-pin under the surface-at-0 names, placed by optics. <span class="live">Now Z₁ = '+fmt(ST.Z1,0)+': x(F₁) = 1; the plane at infinity sits at 1 − Z₂/Z₁ = '+fmt(isPinhole()?NaN:GM.xInfPlane(ST.Z1,ST.Z2),3)+'. Send F₁ far out and that value → 1: the Turn pins, with F₂ as the station.</span>'; },
+  hF2:function(){ return '<b>F₂ — second slit foot.</b> Where the line pierces the second slit; the cross-slit\'s ∞-pin under the surface-at-0 names — the slit foot that plays the station. <span class="live">Now Z₂ = '+fmt(ST.Z2,0)+': x(F₂) = ∞. Send F₂ far out and the ∞-pin walks onto the plane at infinity: x goes affine — the Reach pins (ledger row 5, affine defect → 0).</span>'; }
+};
+var defWho='hP';
+function drawDef(){ $('def').innerHTML=DEFS[defWho](); }
+
+// ---------- drag: persistent handles, window-level listeners filtered by pointerId ----------
+var drag=null;
+function svgPoint(ev){ var pt=svg.createSVGPoint(); pt.x=ev.clientX; pt.y=ev.clientY; return pt.matrixTransform(svg.getScreenCTM().inverse()); }
+var HSPEC={
+  hF1:{set:function(z){ z=Math.max(ZMIN,Math.min(-12,z)); if(Math.abs(z-ST.Z2)<8) z=ST.Z2+(z>ST.Z2?8:-8); ST.Z1=z; }},
+  hF2:{set:function(z){ z=Math.max(ZMIN,Math.min(-12,z)); if(Math.abs(z-ST.Z1)<8) z=ST.Z1+(z>ST.Z1?8:-8); ST.Z2=z; }},
+  hSt:{set:function(z){ ST.D=-Math.max(ZMIN,Math.min(-12,z)); }},
+  hP:{set:function(z){ ST.zP=Math.max(0,Math.min(ST.zBack,z)); }}
+};
+Object.keys(HSPEC).forEach(function(id){ $(id).addEventListener('pointerdown',function(ev){ drag={id:id,pid:ev.pointerId}; defWho=id; drawDef(); ev.preventDefault(); }); });
+window.addEventListener('pointermove',function(ev){ if(!drag||ev.pointerId!==drag.pid) return; var p=svgPoint(ev); HSPEC[drag.id].set(zOfPx(p.x)); drawAll(); });
+window.addEventListener('pointerup',function(ev){ if(drag&&ev.pointerId===drag.pid) drag=null; });
+window.addEventListener('pointercancel',function(ev){ if(drag&&ev.pointerId===drag.pid) drag=null; });
+
+drawAll();
+</script>
+</body>
+</html>
