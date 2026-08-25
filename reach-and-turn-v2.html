@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reach and Turn — the two registers on one line (v2)</title>
+<style>
+  html,body{margin:0;background:#faf6ef;color:#43203f;font-family:Georgia,"Times New Roman",serif}
+  .wrap{max-width:1180px;margin:0 auto;padding:14px 12px 40px}
+  h1{font-size:22px;font-weight:normal;margin:4px 0 2px}
+  h1 .r{color:#177f75} h1 .t{color:#6a2c91}
+  .sub{font-size:14px;color:#6a5a68;margin:0 0 10px;max-width:980px;line-height:1.45}
+  .controls{display:flex;flex-wrap:wrap;gap:8px 20px;align-items:center;font-size:13px;margin:6px 0 8px}
+  .controls label{display:inline-flex;align-items:center;gap:6px}
+  input[type=range]{width:140px;accent-color:#6a2c91}
+  button{font:13px Georgia,serif;color:#43203f;background:#fff;border:1px solid #b08948;border-radius:4px;padding:3px 9px;cursor:pointer}
+  button:hover{background:#f3ead8}
+  .def{font-size:13.5px;line-height:1.5;background:#fff;border:1px solid #e3d9c6;border-left:4px solid #b08948;border-radius:4px;padding:8px 12px;margin:2px 0 8px}
+  .def b{font-weight:normal} .def .live{color:#6a5a68;font-size:12.5px}
+  .cast{display:grid;grid-template-columns:1fr 1fr;gap:6px 24px;font-size:13.5px;line-height:1.5;margin:14px 0 0}
+  .cast div{padding:6px 10px;border-top:1px solid #e3d9c6}
+  .cast b{font-weight:normal;display:block;margin-bottom:2px}
+  @media (max-width:760px){.cast{grid-template-columns:1fr}}
+  .status{font-size:12.5px;line-height:1.5;color:#6a5a68;border-top:1px solid #b08948;margin-top:16px;padding-top:8px}
+  .status b{font-weight:normal;color:#43203f}
+  svg{display:block;width:100%;height:auto;touch-action:none}
+  svg text{font-family:Georgia,serif}
+  .h{cursor:grab}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1><span class="r">Reach</span> and <span class="t">Turn</span> — the two registers on one line</h1>
+<p class="sub">Reach counts: equal steps mean equal amounts, its move is the slide, its involution the fold, and ∞ stays at ∞. Turn compares: equal steps mean equal ratios, its move is the scale, its involution the mirror, and ∞ is a marked point. Theorem 0 says no one graduation does both; the cross-ratio is what survives the change of register; the seam is where the two balances agree.</p>
+<div class="controls">
+  <label><span style="color:#177f75">Reach</span> slide t <input type="range" id="tSlide" min="-100" max="100" value="0"></label>
+  <button id="bFold">fold (τ)</button>
+  <label><span style="color:#6a2c91">Turn</span> scale s <input type="range" id="sScale" min="40" max="250" value="100"></label>
+  <button id="bInvert">invert (ρ)</button>
+  <label>Theorem 0 · pull ∞ in <input type="range" id="dPull" min="0" max="100" value="100"></label>
+  <button id="bReset">reset</button>
+</div>
+<div class="def" id="def"></div>
+<svg id="stage" viewBox="0 0 1180 990" xmlns="http://www.w3.org/2000/svg" aria-label="Reach and Turn instrument">
+  <!-- band 1: Reach -->
+  <text x="40" y="30" font-size="14" fill="#177f75">1 · Reach — <tspan fill="#6a5a68">the additive register: a scale of equal steps, ∞ off the end. Drag A and B; slide with t; fold with τ.</tspan></text>
+  <g id="reach"></g>
+  <!-- band 2: Turn -->
+  <text x="40" y="212" font-size="14" fill="#6a2c91">2 · Turn — <tspan fill="#6a5a68">the multiplicative register: the mirror circle, reciprocal pairs, 0 and ∞ as partners. Drag x (either side of 0); scale with s; invert with ρ.</tspan></text>
+  <g id="turn"></g>
+  <!-- band 3: Theorem 0 -->
+  <text x="40" y="452" font-size="14" fill="#43203f">3 · Theorem 0 — <tspan fill="#6a5a68">one line, one family of graduations g_D pinned at 0 and the unit. Pull ∞ in from the end and the steps stop being equal — the product of the two failures never drops below 1.</tspan></text>
+  <g id="thm0"></g>
+  <!-- band 4: the seam -->
+  <text x="40" y="672" font-size="14" fill="#b08948">4 · The seam — <tspan fill="#6a5a68">two balances in a split rectangle. The product balance (Turn) holds everywhere; the area balance (Reach) closes only on the diagonal. Drag P.</tspan></text>
+  <g id="seam"></g>
+  <text x="640" y="672" font-size="14" fill="#43203f">the six special values — <tspan fill="#6a5a68">fixed pairs of the three involutions</tspan></text>
+  <g id="six"></g>
+  <!-- ledger -->
+  <text x="40" y="880" font-size="14" fill="#43203f">ledger</text>
+  <g id="ledger"></g>
+</svg>
+
+<div class="cast">
+<div><b style="color:#177f75">Reach</b>The additive register — the reading that counts. On a line, a coordinate in which equal steps mean equal amounts; the move that preserves it is the slide (translation), which keeps every difference and breaks every ratio. Its distinguished point is the plane at infinity, which it never marks: ∞ is pinned at ∞, the coordinate is affine, and the only involution available is the Complement. Reach is the register of the count, the covector, the stack of level planes — the glide's "equal steps, ∞ unmarked."</div>
+<div><b style="color:#6a2c91">Turn</b>The multiplicative register — the reading that compares by ratio. Its move is the scale, which keeps every ratio and breaks every difference; its involution is the Reciprocal, inside exchanged with outside across the mirror circle. On a line it is a Möbius coordinate: ∞ is a marked point, so some finite point (the station, the eye) must be sent to ∞ in its place, and equal steps in depth become the harmonic progression. Turn is the register of foreshortening, of perspective, of the cross-slit rig with both feet finite.</div>
+<div><b style="color:#177f75">Complement τ · x ↦ 1 − x</b>Reach's involution: the fold about the midpoint of the unit. Fixes ½ and ∞. The only element of S₃ that an affine engine can see.</div>
+<div><b style="color:#6a2c91">Reciprocal ρ · x ↦ 1/x</b>Turn's involution: inversion in the mirror circle of radius 1. Fixes ±1, exchanges 0 and ∞. Composed with τ it gives the 3-cycle ω = 1/(1 − x); together they generate the whole anharmonic group.</div>
+<div><b>Theorem 0</b>No single scale marks both equal steps and a finite ∞. Affine maps fix ∞; a Möbius map that brings ∞ to a finite mark is not affine. Band 3 makes it quantitative: over equal steps 0, unit, 2·unit, the second difference of the graduation times the finite mark of ∞ equals 2(1 + d)/(2 + d) ≥ 1, d = D/unit. Either failure can be driven to zero — never both. A reading is therefore a law plus a gauge class; Reach and Turn are the two classes.</div>
+<div><b style="color:#b08948">the seam · the neutral surface</b>Where the two registers agree. In the split rectangle: the product balance (ac)(bd) = (ad)(bc) holds for every P (Turn); the area balance ad = bc closes only when a : b = c : d, P on the diagonal (Reach; Euclid I.43). On the congruence square this is the diagonal rᵤ = rᵥ where the two readings rule one ray with reciprocal graduations (identification check-pending per the document). Off the seam the two rulers of one line are the two readings of one congruence.</div>
+<div><b>the six special values · {−1, 0, ½, 1, 2, ∞}</b>The fixed pairs of the three involutions: τ fixes ½ and ∞, ρ fixes 1 and −1, the Third (x/(x−1)) fixes 0 and 2. One S₃ orbit on the sphere; the harmonic case. The 3-cycle ω rotates the three fundamental planes of the perspective apparatus — picture plane, station, plane at infinity.</div>
+<div><b>the harmonic ladder</b>Integers on the Reach side, reciprocals on the Turn side, one transversal carrying each n to 1/n: the von Staudt net, buildable with parallels and incidence alone. The Reciprocal swaps the two ladders; grain lives on ℚ.</div>
+<div><b>free versus welded</b>The glide's third pin is the drafter's, so a depth line may be counted (Reach) or foreshortened (Turn) at will — the gauge is free. The cross-slit's third pin is a slit foot, placed by optics — the gauge is welded to the law. That single difference is the whole of "glide constructions ⇄ cross-slit geometry."</div>
+</div>
+<p class="status"><b>status, band by band (against the v5 document).</b> 1 · Reach and 2 · Turn — definitions. 3 · Theorem 0 — theorem; the witness 2(1+d)/(2+d) ≥ 1 verified numerically (smoke test), limit 2 at the Reach end. 4 · the seam — definition (two balances; Euclid I.43 for the area balance); the identification with the congruence-square diagonal rᵤ = rᵥ is <b>check-pending</b> in the document and is carried here as such, not as settled. The six special values and the S₃ arcs are theorem-level (fixed pairs of the three involutions).</p>
+</div>
+<script>
+// RT — Reach and Turn: the additive and multiplicative registers on one line.
+var RT = (function(){
+  var INF=Infinity;
+  function cr(a,b,c,d){ var n=(c-a)*(d-b), m=(d-a)*(c-b); if(m===0) return n===0?NaN:(n>0?INF:-INF); return n/m; }
+  // --- Reach: affine coordinate, pins 0 -> 0, unit -> 1, inf -> inf
+  function reach(z,unit){ return z/unit; }
+  function slide(z,t){ return z+t; }                 // Reach's move: translation (fixes inf)
+  function tau(x){ return x===INF?INF:1-x; }          // Reach's involution: Complement, fixes 1/2 and inf
+  // --- Turn: Mobius coordinate with inf marked. Family pinned at 0 -> 0, unit -> 1, station z = -D -> inf:
+  //     g_D(z) = z (unit + D) / (unit (z + D)); g_D(inf) = 1 + D/unit ; D -> inf recovers Reach.
+  function turn(z,unit,D){ var m=unit*(z+D); return m===0?INF:z*(unit+D)/m; }
+  function turnInf(unit,D){ return 1+D/unit; }
+  function scale(z,s){ return z*s; }                 // Turn's move: scaling (fixes 0 and inf)
+  function rho(x){ return x===0?INF:(x===INF?0:1/x); } // Turn's involution: Reciprocal, fixes +-1, swaps 0 <-> inf
+  function omega(x){ return x===1?INF:(x===INF?0:1/(1-x)); } // rho . tau
+  function third(x){ return x===INF?1:(x===1?INF:x/(x-1)); }  // tau . rho . tau
+  // --- Theorem 0 witness: second difference of the Turn coordinate over equal steps 0, unit, 2unit
+  //     times the finite mark of infinity is bounded away from 0:  |D2| * |g(inf)| = 2(1+d)/(2+d) >= 1, d = D/unit.
+  function defect(unit,D){ return turn(2*unit,unit,D)-2*turn(unit,unit,D)+turn(0,unit,D); }
+  function witness(unit,D){ return Math.abs(defect(unit,D))*Math.abs(turnInf(unit,D)); }
+  // --- harmonic ladder: the von Staudt net. integers on the Reach side, reciprocals on the Turn side
+  function ladder(n){ var out=[]; for(var k=1;k<=n;k++) out.push({k:k,r:1/k}); return out; }
+  // --- the two balances in a split rectangle. widths a,b ; heights c,d ; cells ac, bd (diagonal pair), ad, bc (other pair)
+  function balances(a,b,c,d){ return { product:(a*c)*(b*d)-(a*d)*(b*c), area:(a*d)-(b*c), ratio:a/b-c/d }; }
+  // normalized residual of the product balance: |(ac)(bd) - (ad)(bc)| / (a+b)^2 (c+d)^2 — scale-free, so a
+  // tolerance of 1e-12 means the same thing whether the sides are pixels or fractions of the rectangle.
+  function productResidual(a,b,c,d){ var n=(a+b)*(c+d); return Math.abs(balances(a,b,c,d).product)/(n*n); }
+  return {cr:cr,reach:reach,slide:slide,tau:tau,turn:turn,turnInf:turnInf,scale:scale,rho:rho,omega:omega,third:third,
+          defect:defect,witness:witness,ladder:ladder,balances:balances,productResidual:productResidual,INF:INF};
+})();
+// ---------- state ----------
+var ST={ A:1.3, B:3.1, t:0, x:2.2, s:1, d:Infinity, P:{u:0.62,v:0.38}, who:'reach', foldOn:false, invOn:false };
+var svg=document.getElementById('stage');
+function $(id){ return document.getElementById(id); }
+function el(tag,attrs,parent){ var e=document.createElementNS('http://www.w3.org/2000/svg',tag); for(var a in attrs) e.setAttribute(a,attrs[a]); if(parent) parent.appendChild(e); return e; }
+function txt(x,y,s,attrs,parent){ var t=el('text',Object.assign({x:x,y:y,'font-size':12,fill:'#43203f'},attrs||{}),parent); t.textContent=s; return t; }
+function fmt(v,d){ if(v===Infinity) return '∞'; if(v===-Infinity) return '−∞'; if(v!==v) return '—'; d=d===undefined?3:d; return v.toFixed(d).replace('-','−'); }
+function sci(v){ return v===0?'0':v.toExponential(1).replace('-','−'); }
+function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
+var TEAL='#177f75', PUR='#6a2c91', GOLD='#b08948', PLUM='#43203f', GREEN='#3d8f3d', CRIM='#c0322b', BLUE='#2a5db0', GREY='#6a5a68';
+
+// ---------- band 1: Reach ----------
+var R_X0=80, R_X1=1000, R_MIN=-1, R_MAX=8, R_Y=120;
+function RX(v){ return R_X0+(v-R_MIN)/(R_MAX-R_MIN)*(R_X1-R_X0); }
+function reachVal(v){ var w=v+ST.t; return ST.foldOn? 1-w : w; }
+function drawReach(){
+  var g=$('reach'); g.innerHTML='';
+  el('line',{x1:RX(R_MIN),y1:R_Y,x2:RX(R_MAX)+30,y2:R_Y,stroke:TEAL,'stroke-width':1.6},g);
+  el('polygon',{points:(RX(R_MAX)+30)+','+R_Y+' '+(RX(R_MAX)+20)+','+(R_Y-5)+' '+(RX(R_MAX)+20)+','+(R_Y+5),fill:TEAL},g);
+  txt(RX(R_MAX)+34,R_Y+4,'∞ — stays at ∞',{fill:TEAL,'font-size':12},g);
+  for(var k=R_MIN;k<=R_MAX;k++){ el('line',{x1:RX(k),y1:R_Y-9,x2:RX(k),y2:R_Y+9,stroke:TEAL,'stroke-width':k===0||k===1?2:1},g); txt(RX(k),R_Y+26,String(k),{fill:TEAL,'font-size':12,'text-anchor':'middle'},g); }
+  // the unit and its midpoint (fold axis)
+  el('line',{x1:RX(0.5),y1:R_Y-40,x2:RX(0.5),y2:R_Y+40,stroke:TEAL,'stroke-width':1,'stroke-dasharray':'3 3'},g);
+  txt(RX(0.5),R_Y-46,'½ — fold axis of τ',{fill:TEAL,'font-size':11,'text-anchor':'middle'},g);
+  // ghosts (original), then live points
+  [['A',ST.A],['B',ST.B]].forEach(function(p){ el('circle',{cx:RX(p[1]),cy:R_Y,r:5,fill:'none',stroke:PLUM,'stroke-dasharray':'2 2'},g); });
+  var a=reachVal(ST.A), b=reachVal(ST.B);
+  // the vector A -> B
+  var ax=RX(clamp(a,R_MIN-0.5,R_MAX+0.5)), bx=RX(clamp(b,R_MIN-0.5,R_MAX+0.5));
+  el('line',{x1:ax,y1:R_Y-22,x2:bx,y2:R_Y-22,stroke:PLUM,'stroke-width':2},g);
+  el('circle',{cx:ax,cy:R_Y-22,r:3,fill:PLUM},g); el('polygon',{points:bx+','+(R_Y-22)+' '+(bx+(bx>=ax?-8:8))+','+(R_Y-26)+' '+(bx+(bx>=ax?-8:8))+','+(R_Y-18),fill:PLUM},g);
+  txt((ax+bx)/2,R_Y-30,'B − A = '+fmt(b-a,3),{fill:PLUM,'font-size':12,'text-anchor':'middle'},g);
+  txt(RX(R_MIN),R_Y+56,'kept by the slide: differences.  broken: ratios.   B/A = '+fmt(b/a,3)+(ST.t!==0?'  (was '+fmt(ST.B/ST.A,3)+')':''),{fill:GREY,'font-size':12},g);
+  txt(RX(R_MIN),R_Y+74,'three pins: 0 → 0, unit → 1, ∞ → ∞.  Involution τ: '+(ST.foldOn?'folded — A, B reflected about ½; ∞ untouched.':'not applied.'),{fill:GREY,'font-size':12},g);
+  // handles
+  placeH('hA',RX(clamp(ST.A,R_MIN,R_MAX)),R_Y); placeH('hB',RX(clamp(ST.B,R_MIN,R_MAX)),R_Y);
+}
+
+// ---------- band 2: Turn ----------
+var T_CX=220, T_CY=330, T_R=70;      // mirror circle inset
+var M_X0=460, M_X1=1060, M_Y=330;    // multiplicative line: drawn in log position for the ladder
+var L_MIN=-2.2, L_MAX=2.2;           // log10 range
+function MX(v){ var l=Math.log10(Math.max(v,1e-9)); return M_X0+(l-L_MIN)/(L_MAX-L_MIN)*(M_X1-M_X0); }
+function turnVal(v){ var w=v*ST.s; return ST.invOn? 1/w : w; }
+function drawTurn(){
+  var g=$('turn'); g.innerHTML='';
+  // mirror circle
+  el('circle',{cx:T_CX,cy:T_CY,r:T_R,fill:'none',stroke:GOLD,'stroke-width':1.6},g);
+  el('line',{x1:T_CX-190,y1:T_CY,x2:T_CX+200,y2:T_CY,stroke:PUR,'stroke-width':1},g);
+  txt(T_CX,T_CY-T_R-8,'the mirror · radius 1',{fill:GOLD,'font-size':11,'text-anchor':'middle'},g);
+  el('circle',{cx:T_CX,cy:T_CY,r:3,fill:PUR},g); txt(T_CX,T_CY+18,'0',{fill:PUR,'font-size':11,'text-anchor':'middle'},g);
+  el('circle',{cx:T_CX+T_R,cy:T_CY,r:4,fill:GOLD},g); txt(T_CX+T_R,T_CY+18,'1',{fill:GOLD,'font-size':11,'text-anchor':'middle'},g);
+  el('circle',{cx:T_CX-T_R,cy:T_CY,r:4,fill:GOLD},g); txt(T_CX-T_R,T_CY+18,'−1',{fill:GOLD,'font-size':11,'text-anchor':'middle'},g);
+  txt(T_CX+200,T_CY-6,'∞',{fill:PUR,'font-size':13,'text-anchor':'middle'},g);
+  var x=turnVal(ST.x), xi=1/x;
+  var px=T_CX+clamp(x,-2.6,2.6)*T_R, pxi=T_CX+clamp(xi,-2.6,2.6)*T_R;
+  // tangent witness when the outer point is finite — on whichever side of 0 the pair lives
+  var sg=x<0?-1:1, outer=Math.max(Math.abs(x),Math.abs(xi));
+  if(outer<2.6){
+    // tangent point T above the inner point: at distance R/outer from 0 along the line, height sqrt(R² − (R/outer)²)
+    var ox=T_CX+sg*outer*T_R, tX=T_CX+sg*T_R/outer, tY=T_CY-Math.sqrt(Math.max(0,T_R*T_R-Math.pow(T_R/outer,2)));
+    el('line',{x1:ox,y1:T_CY,x2:tX,y2:tY,stroke:GREY,'stroke-width':1,'stroke-dasharray':'3 2'},g);
+    el('line',{x1:tX,y1:tY,x2:tX,y2:T_CY,stroke:GREY,'stroke-width':1,'stroke-dasharray':'3 2'},g);
+    el('circle',{cx:tX,cy:tY,r:2.5,fill:GREY},g);
+  }
+  el('circle',{cx:px,cy:T_CY,r:6,fill:'#faf6ef',stroke:PUR,'stroke-width':2.2},g); txt(px,T_CY-12,'x = '+fmt(x,3),{fill:PUR,'font-size':11,'text-anchor':'middle'},g);
+  el('circle',{cx:pxi,cy:T_CY,r:6,fill:PUR},g); txt(pxi,T_CY+32,'1/x = '+fmt(xi,3),{fill:PUR,'font-size':11,'text-anchor':'middle'},g);
+  el('path',{d:'M'+px+' '+T_CY+' Q '+((px+pxi)/2)+' '+(T_CY-40)+' '+pxi+' '+T_CY,fill:'none',stroke:PUR,'stroke-width':1,'stroke-dasharray':'3 2'},g);
+  txt(T_CX-190,T_CY+62,'x · (1/x) = '+fmt(x*xi,12)+'   fixed: ±1.   0 ↔ ∞ exchanged.'+(x<0?'   (negative side: the mirror acts the same way there.)':''),{fill:GREY,'font-size':12},g);
+  // multiplicative line with the harmonic ladder
+  el('line',{x1:M_X0,y1:M_Y,x2:M_X1+30,y2:M_Y,stroke:PUR,'stroke-width':1.6},g);
+  el('polygon',{points:(M_X1+30)+','+M_Y+' '+(M_X1+20)+','+(M_Y-5)+' '+(M_X1+20)+','+(M_Y+5),fill:PUR},g);
+  txt(M_X1+34,M_Y+4,'∞ — a marked point',{fill:PUR,'font-size':12},g);
+  txt(M_X0-6,M_Y+4,'0',{fill:PUR,'font-size':12,'text-anchor':'end'},g);
+  txt(M_X0,M_Y-50,'the harmonic ladder: n and 1/n — equal ratios, not equal gaps',{fill:PUR,'font-size':11},g);
+  RT.ladder(8).forEach(function(r){ var k=r.k;
+    el('line',{x1:MX(k),y1:M_Y-9,x2:MX(k),y2:M_Y+9,stroke:PUR,'stroke-width':k===1?2:1},g); txt(MX(k),M_Y+24,String(k),{fill:PUR,'font-size':11,'text-anchor':'middle'},g);
+    if(k>1){ el('line',{x1:MX(1/k),y1:M_Y-9,x2:MX(1/k),y2:M_Y+9,stroke:PUR,'stroke-width':1},g); txt(MX(1/k),M_Y+24,'1/'+k,{fill:PUR,'font-size':11,'text-anchor':'middle'},g);
+      el('path',{d:'M'+MX(1/k)+' '+(M_Y-10)+' Q '+MX(1)+' '+(M_Y-14-3*k)+' '+MX(k)+' '+(M_Y-10),fill:'none',stroke:GOLD,'stroke-width':0.8},g); }
+  });
+  var a=turnVal(ST.A), b=turnVal(ST.B);
+  el('circle',{cx:MX(a),cy:M_Y,r:5,fill:'none',stroke:PLUM,'stroke-width':2},g); txt(MX(a),M_Y-14,'A',{fill:PLUM,'font-size':11,'text-anchor':'middle'},g);
+  el('circle',{cx:MX(b),cy:M_Y,r:5,fill:'none',stroke:PLUM,'stroke-width':2},g); txt(MX(b),M_Y-14,'B',{fill:PLUM,'font-size':11,'text-anchor':'middle'},g);
+  txt(M_X0,M_Y+56,'kept by the scale: ratios.  B/A = '+fmt(b/a,3)+'.   broken: differences.  B − A = '+fmt(b-a,3)+(ST.s!==1?'  (was '+fmt(ST.B-ST.A,3)+')':''),{fill:GREY,'font-size':12},g);
+  txt(M_X0,M_Y+74,'three pins: 0 → 0, unit → 1, station → ∞ — so ∞ itself lands on a finite mark.  Involution ρ: '+(ST.invOn?'inverted — every value replaced by its reciprocal; 0 and ∞ traded.':'not applied.'),{fill:GREY,'font-size':12},g);
+  placeH('hX',T_CX+clamp(ST.x,-2.6,2.6)*T_R,T_CY);   // handle rides the raw x; the drawn pair is s·x and 1/(s·x)
+}
+
+// ---------- band 3: Theorem 0 ----------
+var Z_X0=80, Z_X1=1000, Z_MIN=-0.5, Z_MAX=8.5, Z_Y=520, C_Y=590; var UNIT=1;
+function ZX(z){ return Z_X0+(z-Z_MIN)/(Z_MAX-Z_MIN)*(Z_X1-Z_X0); }
+function dOf(){ return ST.d; }
+function gD(z){ return ST.d===Infinity? RT.reach(z,UNIT) : RT.turn(z,UNIT,ST.d*UNIT); }
+function gInf(){ return ST.d===Infinity? Infinity : RT.turnInf(UNIT,ST.d*UNIT); }
+function drawThm0(){
+  var g=$('thm0'); g.innerHTML='';
+  // physical line z with equal z-steps
+  txt(Z_X0,Z_Y-30,'the line, physically (z): equal steps of one unit',{fill:GREY,'font-size':11},g);
+  el('line',{x1:ZX(Z_MIN),y1:Z_Y,x2:ZX(Z_MAX)+30,y2:Z_Y,stroke:PLUM,'stroke-width':1.4},g);
+  el('polygon',{points:(ZX(Z_MAX)+30)+','+Z_Y+' '+(ZX(Z_MAX)+20)+','+(Z_Y-5)+' '+(ZX(Z_MAX)+20)+','+(Z_Y+5),fill:PLUM},g);
+  txt(ZX(Z_MAX)+34,Z_Y+4,'∞',{fill:GREEN,'font-size':13},g);
+  for(var k=0;k<=8;k++){ el('line',{x1:ZX(k),y1:Z_Y-7,x2:ZX(k),y2:Z_Y+7,stroke:PLUM,'stroke-width':1},g); txt(ZX(k),Z_Y+20,String(k),{fill:PLUM,'font-size':11,'text-anchor':'middle'},g); }
+  if(ST.d!==Infinity){ var sx=ZX(clamp(-ST.d,Z_MIN,Z_MAX)); el('rect',{x:sx-6,y:Z_Y-6,width:12,height:12,fill:TEAL,transform:'rotate(45 '+sx+' '+Z_Y+')'},g); txt(sx,Z_Y-12,'station (z = −D = '+fmt(-ST.d,2)+')'+(-ST.d<Z_MIN?' ◂':''),{fill:TEAL,'font-size':11,'text-anchor':'middle'},g); }
+  // the coordinate g_D, drawn in coordinate space, same pixel scale
+  var col= ST.d===Infinity? TEAL : PUR;
+  txt(Z_X0,C_Y-30,'the same line read by g_D — '+(ST.d===Infinity?'D = ∞: this is Reach; ∞ is off the end and the steps are equal':'D = '+fmt(ST.d,2)+' units: ∞ is marked at 1 + D/unit = '+fmt(gInf(),3)+' and the steps crowd'),{fill:col,'font-size':11},g);
+  el('line',{x1:ZX(Z_MIN),y1:C_Y,x2:ZX(Z_MAX)+30,y2:C_Y,stroke:col,'stroke-width':1.6},g);
+  el('polygon',{points:(ZX(Z_MAX)+30)+','+C_Y+' '+(ZX(Z_MAX)+20)+','+(C_Y-5)+' '+(ZX(Z_MAX)+20)+','+(C_Y+5),fill:col},g);
+  for(var k=0;k<=8;k++){ var v=gD(k); if(v<Z_MAX+0.4){ el('line',{x1:ZX(v),y1:C_Y-7,x2:ZX(v),y2:C_Y+7,stroke:col,'stroke-width':k<=1?2:1},g);
+      el('line',{x1:ZX(k),y1:Z_Y+8,x2:ZX(v),y2:C_Y-8,stroke:col,'stroke-width':0.6,opacity:0.5},g); } }
+  var gi=gInf(); var ix= gi===Infinity? ZX(Z_MAX)+18 : ZX(clamp(gi,Z_MIN,Z_MAX+0.3));
+  el('rect',{x:ix-6,y:C_Y-6,width:12,height:12,fill:GREEN,transform:'rotate(45 '+ix+' '+C_Y+')'},g);
+  txt(ix,C_Y+24,'∞-plane at '+fmt(gi,3)+(gi>Z_MAX?' →':''),{fill:GREEN,'font-size':11,'text-anchor':'middle'},g);
+  // meters
+  var def=Math.abs(ST.d===Infinity?0:RT.defect(UNIT,ST.d*UNIT)), mark=gi, w=ST.d===Infinity?Infinity:RT.witness(UNIT,ST.d*UNIT);
+  var wLim= w===Infinity? 2 : w;   // 2(1+d)/(2+d) -> 2 as d -> inf: the bound's other end, not 0·∞
+  var my=C_Y+46; txt(Z_X0,my,'equal-step defect |Δ²g| = '+fmt(def,4),{fill:col,'font-size':12},g);
+  txt(Z_X0+300,my,'finite mark of ∞ = '+fmt(mark,3),{fill:GREEN,'font-size':12},g);
+  txt(Z_X0+560,my,'product = '+(w===Infinity?'→ 2  (defect → 0, mark → ∞: the other end of (1, 2])':fmt(w,4)+'  ≥ 1'),{fill:GOLD,'font-size':12},g);
+  // bar for the witness
+  var bx0=Z_X0+560, bw=340; el('rect',{x:bx0,y:my+8,width:bw,height:6,fill:'#e3d9c6'},g);
+  el('line',{x1:bx0+bw/2,y1:my+5,x2:bx0+bw/2,y2:my+17,stroke:GOLD,'stroke-width':1.5},g); txt(bx0+bw/2,my+30,'1',{fill:GOLD,'font-size':10,'text-anchor':'middle'},g); txt(bx0+bw,my+30,'2',{fill:GOLD,'font-size':10,'text-anchor':'end'},g);
+  el('rect',{x:bx0,y:my+8,width:bw*clamp(wLim/2,0,1),height:6,fill:GOLD},g);
+}
+
+// ---------- band 4: seam + six values ----------
+var S_X=80, S_Y=690, S_W=400, S_H=140;
+function drawSeam(){
+  var g=$('seam'); g.innerHTML='';
+  var a=ST.P.u*S_W, b=(1-ST.P.u)*S_W, c=ST.P.v*S_H, d=(1-ST.P.v)*S_H;
+  var B=RT.balances(a,b,c,d); var onSeam=Math.abs(B.ratio)<0.02; var prodRes=RT.productResidual(a,b,c,d);
+  // cells: ac (top-left), bc (top-right), ad (bottom-left), bd (bottom-right)
+  el('rect',{x:S_X,y:S_Y,width:a,height:c,fill:GOLD,opacity:0.18},g); el('rect',{x:S_X+a,y:S_Y+c,width:b,height:d,fill:GOLD,opacity:0.18},g);
+  el('rect',{x:S_X+a,y:S_Y,width:b,height:c,fill:TEAL,opacity:0.16},g); el('rect',{x:S_X,y:S_Y+c,width:a,height:d,fill:TEAL,opacity:0.16},g);
+  el('rect',{x:S_X,y:S_Y,width:S_W,height:S_H,fill:'none',stroke:PLUM,'stroke-width':1.2},g);
+  el('line',{x1:S_X,y1:S_Y,x2:S_X+S_W,y2:S_Y+S_H,stroke:GOLD,'stroke-width':1,'stroke-dasharray':'4 3'},g);
+  el('line',{x1:S_X+a,y1:S_Y,x2:S_X+a,y2:S_Y+S_H,stroke:PLUM,'stroke-width':1},g); el('line',{x1:S_X,y1:S_Y+c,x2:S_X+S_W,y2:S_Y+c,stroke:PLUM,'stroke-width':1},g);
+  txt(S_X+a/2,S_Y-6,'a',{fill:PLUM,'font-size':11,'text-anchor':'middle'},g); txt(S_X+a+b/2,S_Y-6,'b',{fill:PLUM,'font-size':11,'text-anchor':'middle'},g);
+  txt(S_X-8,S_Y+c/2+4,'c',{fill:PLUM,'font-size':11,'text-anchor':'end'},g); txt(S_X-8,S_Y+c+d/2+4,'d',{fill:PLUM,'font-size':11,'text-anchor':'end'},g);
+  txt(S_X+a/2,S_Y+c/2+4,'ac',{fill:GOLD,'font-size':11,'text-anchor':'middle'},g); txt(S_X+a+b/2,S_Y+c+d/2+4,'bd',{fill:GOLD,'font-size':11,'text-anchor':'middle'},g);
+  txt(S_X+a+b/2,S_Y+c/2+4,'bc',{fill:TEAL,'font-size':11,'text-anchor':'middle'},g); txt(S_X+a/2,S_Y+c+d/2+4,'ad',{fill:TEAL,'font-size':11,'text-anchor':'middle'},g);
+  txt(S_X,S_Y+S_H+22,'Turn · product balance (ac)(bd) − (ad)(bc) = 0   holds everywhere   (fp residual '+sci(prodRes)+', normalized)',{fill:GOLD,'font-size':12},g);
+  txt(S_X,S_Y+S_H+40,'Reach · area balance ad − bc = '+fmt(B.area/(S_W*S_H),4)+'   '+(onSeam?'closed — P on the seam':'open — P off the diagonal'),{fill:onSeam?GOLD:TEAL,'font-size':12},g);
+  placeH('hP',S_X+a,S_Y+c);
+  // six values dial
+  var s=$('six'); s.innerHTML='';
+  var vals=[[-1,'−1',PUR],[0,'0',PLUM],[0.5,'½',TEAL],[1,'1',PUR],[2,'2',PLUM],[Infinity,'∞',TEAL]];
+  var dx0=660, dx1=1100, dy=720; function DX(v){ return v===Infinity? dx1+16 : dx0+(v+1.4)/(3.8)*(dx1-dx0); }
+  el('line',{x1:dx0,y1:dy,x2:dx1+10,y2:dy,stroke:PLUM,'stroke-width':1},g=s); el('polygon',{points:(dx1+10)+','+dy+' '+(dx1)+','+(dy-4)+' '+dx1+','+(dy+4),fill:PLUM},s);
+  vals.forEach(function(v){ el('circle',{cx:DX(v[0]),cy:dy,r:4,fill:v[2]},s); txt(DX(v[0]),dy+18,v[1],{fill:v[2],'font-size':12,'text-anchor':'middle'},s); });
+  // arcs: tau pairs 0<->1 and -1<->2 ; rho pairs 0<->inf, 1/2<->2 ; third pairs 1<->inf, -1<->1/2
+  function arc(u,v,col,h){ el('path',{d:'M'+DX(u)+' '+(dy-5)+' Q '+((DX(u)+DX(v))/2)+' '+(dy-h)+' '+DX(v)+' '+(dy-5),fill:'none',stroke:col,'stroke-width':1},s); }
+  arc(0,1,TEAL,22); arc(-1,2,TEAL,40); arc(0.5,2,PUR,30); arc(0,Infinity,PUR,58); arc(-1,0.5,GREY,26); arc(1,Infinity,GREY,48);
+  txt(dx0,dy+44,'τ (teal) fixes ½ and ∞, pairs 0↔1, −1↔2.   ρ (purple) fixes 1 and −1, pairs ½↔2, 0↔∞.   third (grey) fixes 0 and 2, pairs −1↔½, 1↔∞.',{fill:GREY,'font-size':11},s);
+  txt(dx0,dy+62,'ρτ = ω = 1/(1−x): a 3-cycle, (0 → 1 → ∞ → 0).  Reach sees only {id, τ}; Turn brings ρ; together, S₃.',{fill:GREY,'font-size':11},s);
+  // live: the current Reach x under the involutions
+  var v=ST.x; txt(dx0,dy+84,'x = '+fmt(v,3)+'   τx = '+fmt(RT.tau(v),3)+'   ρx = '+fmt(RT.rho(v),3)+'   ωx = '+fmt(RT.omega(v),3)+'   ω³x = '+fmt(RT.omega(RT.omega(RT.omega(v))),3),{fill:PLUM,'font-size':12},s);
+}
+
+// ---------- ledger ----------
+function drawLedger(){
+  var L=$('ledger'); L.innerHTML='';
+  var q=[0.4,1.7,3.2,6.1]; var crR=RT.cr.apply(null,q.map(function(z){return RT.reach(z,UNIT);}));
+  var Dv= ST.d===Infinity? 1e9 : ST.d*UNIT; var crT=RT.cr.apply(null,q.map(function(z){return RT.turn(z,UNIT,Dv);}));
+  var a=reachVal(ST.A), b=reachVal(ST.B), ta=turnVal(ST.A), tb=turnVal(ST.B);
+  var dDiff=Math.abs((b-a)-(ST.foldOn?-(ST.B-ST.A):(ST.B-ST.A)));
+  var dRat=Math.abs(tb/ta-(ST.invOn?ST.A/ST.B:ST.B/ST.A));
+  var w= ST.d===Infinity? null : RT.witness(UNIT,ST.d*UNIT);
+  var Bl=RT.balances(ST.P.u,1-ST.P.u,ST.P.v,1-ST.P.v); var prodRes=RT.productResidual(ST.P.u,1-ST.P.u,ST.P.v,1-ST.P.v);
+  var rows=[
+    ['invariant','cross-ratio of four depths, read in Reach and in g_D: '+fmt(crR,6)+' / '+fmt(crT,6),'spread '+sci(Math.abs(crR-crT)),Math.abs(crR-crT)<1e-9],
+    ['Reach','slide keeps B − A'+(ST.foldOn?' (fold reverses its sign)':''),'drift '+sci(dDiff),dDiff<1e-12],
+    ['Turn','scale keeps B/A'+(ST.invOn?' (invert reciprocates it)':''),'drift '+sci(dRat),dRat<1e-12],
+    ['involutions','τ² = ρ² = id;  ρτ = ω;  ω³ = id','drift '+sci(Math.max(Math.abs(RT.tau(RT.tau(ST.x))-ST.x),Math.abs(RT.rho(RT.rho(ST.x))-ST.x),Math.abs(RT.rho(RT.tau(ST.x))-RT.omega(ST.x)),Math.abs(RT.omega(RT.omega(RT.omega(ST.x)))-ST.x))),true],
+    ['Theorem 0','|Δ²g| · |g(∞)| = 2(1+d)/(2+d) ≥ 1  '+(w===null?'→ 2 as D → ∞ (defect → 0, mark → ∞)':'= '+fmt(w,6)),w===null?'Reach end · limit 2':(w>=1-1e-12?'never both':'VIOLATED'),w===null?true:w>=1-1e-12],
+    ['seam','product balance holds (residual '+sci(prodRes)+'); area balance ad − bc = '+fmt(Bl.area,4),Math.abs(Bl.ratio)<0.02?'on the seam':'off the seam',prodRes<1e-12]
+  ];
+  rows.forEach(function(r,i){ var y=902+i*16; txt(40,y,r[0],{fill:GREY,'font-size':11},L); txt(120,y,r[1],{fill:PLUM,'font-size':11.5},L);
+    var col=r[3]===null?GREY:(r[3]?GREEN:CRIM); txt(1130,y,r[2],{fill:col,'font-size':11,'text-anchor':'end'},L); });
+}
+
+// ---------- definition card ----------
+var DEFS={
+  reach:function(){ return '<b style="color:#177f75">Reach</b> — the additive register. Equal steps mean equal amounts; the slide keeps differences and breaks ratios; ∞ is never marked. <span class="live">A = '+fmt(ST.A,2)+', B = '+fmt(ST.B,2)+', t = '+fmt(ST.t,2)+' → B − A = '+fmt(reachVal(ST.B)-reachVal(ST.A),3)+' (unchanged by t), B/A = '+fmt(reachVal(ST.B)/reachVal(ST.A),3)+' (changes with t). Fold τ reflects about ½ and leaves ∞ where it is.</span>'; },
+  turn:function(){ return '<b style="color:#6a2c91">Turn</b> — the multiplicative register. Equal steps mean equal ratios; the scale keeps ratios and breaks differences; ∞ is a marked point, traded with 0 by the mirror. <span class="live">x = '+fmt(turnVal(ST.x),3)+', 1/x = '+fmt(1/turnVal(ST.x),3)+', product 1. The tangent from the outer point touches the mirror directly above the inner point (the classical witness). B/A = '+fmt(turnVal(ST.B)/turnVal(ST.A),3)+' is unchanged by s.</span>'; },
+  thm0:function(){ return '<b>Theorem 0</b> — no single scale marks both equal steps and a finite ∞. <span class="live">'+(ST.d===Infinity?'D = ∞: the graduation is Reach — equal steps, ∞ off the end. The product 2(1+d)/(2+d) → 2 here, the bound\'s other end; pulling ∞ in sweeps it down through (1, 2] toward 1, never below.':'D = '+fmt(ST.d,2)+' units: ∞ sits at '+fmt(gInf(),3)+', the equal-step defect is '+fmt(Math.abs(RT.defect(UNIT,ST.d*UNIT)),4)+', and their product '+fmt(RT.witness(UNIT,ST.d*UNIT),4)+' cannot fall below 1. Pull the slider back out to watch the defect vanish only as the mark escapes to ∞.')+'</span>'; },
+  seam:function(){ var Bl=RT.balances(ST.P.u,1-ST.P.u,ST.P.v,1-ST.P.v); return '<b style="color:#b08948">the seam</b> — where the registers agree. The product balance (Turn) holds for every P; the area balance (Reach) closes only on the diagonal, a : b = c : d. <span class="live">a : b = '+fmt(ST.P.u/(1-ST.P.u),3)+', c : d = '+fmt(ST.P.v/(1-ST.P.v),3)+' → ad − bc = '+fmt(Bl.area,4)+(Math.abs(Bl.ratio)<0.02?' — closed. On the congruence square this is the diagonal rᵤ = rᵥ (identification check-pending).':' — open. Drag P onto the dashed diagonal to close it.')+'</span>'; }
+};
+function drawDef(){ $('def').innerHTML=DEFS[ST.who](); }
+
+// ---------- handles / drag ----------
+var HANDLE_SPECS={hA:{color:TEAL,label:'A'},hB:{color:TEAL,label:'B'},hX:{color:PUR,label:'x'},hP:{color:GOLD,label:'P'}};
+Object.keys(HANDLE_SPECS).forEach(function(id){ var sp=HANDLE_SPECS[id]; var g=el('g',{id:id,'class':'h'},svg);
+  el('circle',{r:9,fill:'#faf6ef',stroke:sp.color,'stroke-width':2.5},g); txt(0,4,sp.label,{fill:sp.color,'font-size':11,'text-anchor':'middle'},g); });
+function placeH(id,x,y){ $(id).setAttribute('transform','translate('+x+','+y+')'); }
+var drag=null;
+function svgPoint(ev){ var pt=svg.createSVGPoint(); pt.x=ev.clientX; pt.y=ev.clientY; return pt.matrixTransform(svg.getScreenCTM().inverse()); }
+var SET={
+  hA:function(p){ ST.A=clamp(R_MIN+(p.x-R_X0)/(R_X1-R_X0)*(R_MAX-R_MIN),0.2,R_MAX); if(Math.abs(ST.A-ST.B)<0.2) ST.A=ST.B+(ST.A>ST.B?0.2:-0.2); ST.who='reach'; },
+  hB:function(p){ ST.B=clamp(R_MIN+(p.x-R_X0)/(R_X1-R_X0)*(R_MAX-R_MIN),0.2,R_MAX); if(Math.abs(ST.A-ST.B)<0.2) ST.B=ST.A+(ST.B>ST.A?0.2:-0.2); ST.who='reach'; },
+  hX:function(p){ var v=clamp((p.x-T_CX)/T_R,-2.6,2.6); if(Math.abs(v)<0.15) v=v<0?-0.15:0.15; ST.x=v; ST.who='turn'; },
+  hP:function(p){ ST.P.u=clamp((p.x-S_X)/S_W,0.05,0.95); ST.P.v=clamp((p.y-S_Y)/S_H,0.05,0.95); ST.who='seam'; }
+};
+Object.keys(SET).forEach(function(id){ $(id).addEventListener('pointerdown',function(ev){ drag={id:id,pid:ev.pointerId}; ST.who={hA:'reach',hB:'reach',hX:'turn',hP:'seam'}[id]; drawAll(); ev.preventDefault(); }); });
+window.addEventListener('pointermove',function(ev){ if(!drag||ev.pointerId!==drag.pid) return; SET[drag.id](svgPoint(ev)); drawAll(); });
+window.addEventListener('pointerup',function(ev){ if(drag&&ev.pointerId===drag.pid) drag=null; });
+window.addEventListener('pointercancel',function(ev){ if(drag&&ev.pointerId===drag.pid) drag=null; });
+
+// ---------- controls ----------
+$('tSlide').addEventListener('input',function(){ ST.t=this.value/40; ST.who='reach'; drawAll(); });
+$('bFold').addEventListener('click',function(){ ST.foldOn=!ST.foldOn; ST.who='reach'; drawAll(); });
+$('sScale').addEventListener('input',function(){ ST.s=this.value/100; ST.who='turn'; drawAll(); });
+$('bInvert').addEventListener('click',function(){ ST.invOn=!ST.invOn; ST.who='turn'; drawAll(); });
+$('dPull').addEventListener('input',function(){ var v=+this.value; ST.d = v>=100? Infinity : Math.pow(10, -1.5 + 3*v/100); ST.who='thm0'; drawAll(); }); // d from 0.03 to ~1000, then inf
+$('bReset').addEventListener('click',function(){ ST.t=0;ST.s=1;ST.foldOn=false;ST.invOn=false;ST.d=Infinity;ST.A=1.3;ST.B=3.1;ST.x=2.2;ST.P={u:0.62,v:0.38};ST.who='reach'; $('tSlide').value=0;$('sScale').value=100;$('dPull').value=100; drawAll(); });
+
+function drawAll(){ drawReach(); drawTurn(); drawThm0(); drawSeam(); drawLedger(); drawDef(); }
+drawAll();
+</script>
+</body>
+</html>
