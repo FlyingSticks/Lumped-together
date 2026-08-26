@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Tetrahedral Multi-Target Scanner</title>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <style>
+        body { margin: 0; padding: 0; background-color: #000; color: #fff;
+               font-family: monospace; overflow: hidden; }
+        #visualization { width: 100vw; height: 100vh; }
+
+        .hud { position: absolute; top: 10px; left: 10px; z-index: 100;
+               background: rgba(10, 10, 30, 0.9); padding: 15px; width: 280px;
+               border: 1px solid #00e5ff; border-radius: 4px;
+               box-shadow: 0 0 15px rgba(0, 229, 255, 0.3); }
+        .hud h3 { margin: 0 0 10px 0; color: #00e5ff; font-size: 14px;
+                  text-transform: uppercase; border-bottom: 1px solid #333;
+                  padding-bottom: 5px; }
+
+        .tracker-row { display: flex; justify-content: space-between;
+                       margin-bottom: 6px; font-size: 12px;
+                       border-bottom: 1px dashed #333; padding-bottom: 2px;}
+        .tracker-lbl { font-weight: bold; color: #ccc; }
+        .tracker-val { font-family: 'Courier New', monospace; color: #00ff00; }
+        .tracker-val.bad { color: #ff5555; }      /* singular reads render red */
+
+        .control-group { margin-top: 15px; }
+        .control-group label { display: block; font-size: 11px; color: #888;
+                               margin-bottom: 4px; }
+        .control-group input { width: 100%; accent-color: #00e5ff; }
+
+        .note { position: absolute; bottom: 12px; right: 14px; z-index: 100;
+                max-width: 380px; background: rgba(0,0,0,0.75);
+                border-left: 3px solid #b08948; padding: 8px 12px;
+                font-size: 11px; line-height: 1.55; color: #ddd; }
+        .note b { color: #ffe08a; }
+    </style>
+</head>
+<body>
+
+<div class="hud">
+    <h3>Active Depth Scanner</h3>
+    <div id="tracker-data"></div>
+
+    <div class="control-group">
+        <label>Vertical Slit Position (Z)</label>
+        <input type="range" id="slider-v" min="50" max="300" value="150" step="1">
+    </div>
+    <div class="control-group">
+        <label>Horizontal Slit Position (Z)</label>
+        <input type="range" id="slider-h" min="50" max="300" value="250" step="1">
+    </div>
+    <div class="control-group">
+        <!-- FIXED: was from="-200", not a valid attribute -->
+        <label>Target Depth Offset (&Delta;z)</label>
+        <input type="range" id="slider-z" min="-200" max="500" value="0" step="1">
+    </div>
+    <div style="margin-top:10px; font-size:10px; color:#aaa;">
+        * The "CV System" measures width/height of projected blobs and solves Z instantly.
+        Drag &Delta;z to push targets through the slit planes &mdash; watch the image blow up,
+        go singular, and re-enter behind. Slits live at Zv=<span id="rzv">150</span>,
+        Zh=<span id="rzh">250</span>; mirror radius R=&radic;(Zv&middot;Zh)=<span id="rr">193.65</span>.
+    </div>
+</div>
+
+<div id="visualization"></div>
+
+<div class="note">
+    <b>The slit crossing is the point.</b> At z = Zv or Zh the projection goes
+    infinite &mdash; the blob fills the screen &mdash; then re-enters on the far side,
+    mirrored. Between the slits the two channels disagree in sign: the measured
+    "aspect ratio" is negative there, and the solver reports SINGULAR rather than
+    pretending. This page occupies the welded rig at its rawest: pins you can move.
+</div>
+
+<script>
+    /* ================================================================
+       PROVENANCE (house pattern): welded measuring rig, ray-role.
+       Default targets sit OUTSIDE the slit interval; drag Δz to cross
+       either slit plane. Solver = same Möbius inversion as the
+       violin-portrait codec, written against screen plane zs instead
+       of sensor plane z=0.
+       Self-check runs on load (console): solver round-trips the
+       projection at five depths x three rigs.
+       v3 fixes: geometry/metadata kept separate (Object.assign no
+       longer clobbers sphere arrays); slider tag corrected.
+       ================================================================ */
+
+    // --- Config ---
+    const OBJ_R = 15;
+    const TARGETS = [
+        { id: 'T1', x: 0,   y: 40,  z: -50, color: 'red' },
+        { id: 'T2', x: -40, y: -20, z: 0,   color: 'lime' },
+        { id: 'T3', x: 40,  y: -20, z: 80,  color: 'cyan' }
+    ];
+    let dz = 0;
+
+    // --- Math Helpers ---
+    function makeSphere(cx, cy, cz, r) {
+        let x=[], y=[], z=[];
+        const steps = 10;
+        for(let i=0; i<=steps; i++){
+            let lat = (i/steps)*Math.PI;
+            for(let j=0; j<=steps*2; j++){
+                let lon = (j/(steps*2))*2*Math.PI;
+                x.push(cx + r*Math.sin(lat)*Math.cos(lon));
+                y.push(cy + r*Math.sin(lat)*Math.sin(lon));
+                z.push(cz + r*Math.cos(lat));
+            }
+            x.push(null); y.push(null); z.push(null);
+        }
+        return {x,y,z};
+    }
+
+    // per-point slit projection toward screen zs
+    function project(x, y, z, zv, zh, zs) {
+        if(x === null) return null;
+        let mx = -x/(zv - z), my = -y/(zh - z);
+        return { x: x + mx*(zs - z),
+                 y: y + my*(zs - z),
+                 z: zs };
+    }
+
+    /* THE SOLVER:
+       returns NaN when singular (not a sentinel that renders as a
+       plausible green readout). Denominator guard is a relative
+       epsilon against input scale, not an arbitrary constant. */
+    function solveDepth(width, height, zv, zh, zs) {
+        if (width <= 0 || height <= 0) return NaN;
+        let ar = width/height * (zh/zv);          // undo known channel scales
+        let num = ar*(zs - zv)*(zs - zh);
+        let den = ar*(zs - zv) - (zs - zh);
+        let scale = Math.max(Math.abs(ar*(zs-zv)), Math.abs(zs-zh), 1e-30);
+        if (Math.abs(den) <= 1e-12*scale) return NaN;   // pole: target on a slit
+        let zSol = num/den + zs;                  // shift back to world depth
+        return isFinite(zSol) ? zSol : NaN;
+    }
+
+    // ================================================================
+    // SELF-CHECK (family standard): solver round-trips the projection
+    // at five depths x three rigs. Runs on load, logs to console.
+    // ================================================================
+    (function selfCheck(){
+        function measure(sx, sy, sz, x, y, z, zv, zh){
+            const pts=[[x+OBJ_R,y,z],[x-OBJ_R,y,z],[x,y+OBJ_R,z],[x,y-OBJ_R,z]];
+            const prj=pts.map(p=>project(p[0],p[1],p[2],zv,zh,sz));
+            const w=Math.max(...prj.map(p=>Math.abs(p.x-sx)));
+            const h=Math.max(...prj.map(p=>Math.abs(p.y-sy)));
+            return solveDepth(w,h,zv,zh,sz);
+        }
+        const results=[];
+        for (const zsC of [-400, 0, 400]) {         // three rigs (screen depths)
+            for (const zz of [-80,-20,60,180,320]) {// five depths, straddling slits
+                for (let k=0;k<5;k++){              // jittered lateral positions
+                    const x=(k-2)*17, y=(k-2)*23;
+                    const got=measure(zsC,zsC,zsC,x,y,zz,150,250);
+                    if (Math.abs(zz-150)<1 || Math.abs(zz-250)<1) continue;
+                    results.push([zz,got]);
+                }
+            }
+        }
+        const bad=results.filter(r=>!isFinite(r[1])||Math.abs(r[1]-r[0])>1e-6);
+        console.log("[selfcheck] solver round-trip: "+
+            (results.length-bad.length)+"/"+results.length+" pass");
+        bad.slice(0,5).forEach(r=>console.error("[selfcheck] FAIL:",r));
+    })();
+
+    // ================================================================
+    // SCENE — FIX: geometry arrays and metadata kept SEPARATE so
+    // neither clobbers the other (the Object.assign spread previously
+    // overwrote x/y/z arrays with scalars and blanked the display).
+    // ================================================================
+    let zv = 150, zh = 250, zs = 0;
+
+    const GEOM = TARGETS.map(t => {
+        const s = makeSphere(t.x, t.y, t.z, OBJ_R);
+        return { id:t.id, color:t.color, baseZ:t.z,
+                 gx:s.x, gy:s.y, gz:s.z };
+    });
+
+    function redraw() {
+        const traces = [];
+        // slit planes as translucent walls at current slider values
+        traces.push({
+            type:'surface', x:[-120,120], y:[-120,120],
+            z:[[zv,zv],[zv,zv]], opacity:0.18,
+            colorscale:[[0,'#ff5555'],[1,'#ff5555']],
+            showscale:false, hoverinfo:'skip'
+        });
+        traces.push({
+            type:'surface', x:[-120,120], y:[-120,120],
+            z:[[zh,zh],[zh,zh]], opacity:0.18,
+            colorscale:[[0,'#5fd7ff'],[1,'#5fd7ff']],
+            showscale:false, hoverinfo:'skip'
+        });
+        // targets — arrays shifted by dz, null separators preserved
+        GEOM.forEach(g => {
+            traces.push({
+                type:'scatter3d', mode:'lines',
+                x:g.gx, y:g.gy,
+                z:g.gz.map(v => v===null ? null : v+dz),
+                line:{color:g.color,width:2}, opacity:0.85,
+                name:g.id
+            });
+        });
+        Plotly.react('visualization', traces, {
+            paper_bgcolor:'#000', plot_bgcolor:'#000',
+            scene:{ camera:{eye:{x:1.6,y:1.4,z:0.9}},
+                    xaxis:{range:[-150,150]}, yaxis:{range:[-150,150]},
+                    zaxis:{range:[-300,600]} },
+            margin:{l:0,r:0,t:30,b:30},
+            showlegend:true, legend:{font:{size:10}}
+        });
+    }
+
+    // --- HUD ---
+    function updateHUD() {
+        let rows='';
+        GEOM.forEach(g=>{
+            const zz=g.baseZ+dz;
+            const wPts=[[OBJ_R,0,zz],[-OBJ_R,0,zz]];
+            const hPts=[[0,OBJ_R,zz],[0,-OBJ_R,zz]];
+            const pw=wPts.map(p=>project(p[0],p[1],p[2],zv,zh,zs));
+            const ph=hPts.map(p=>project(p[0],p[1],p[2],zv,zh,zs));
+            const w=Math.max(...pw.map(p=>Math.abs(p.x)));
+            const h=Math.max(...ph.map(p=>Math.abs(p.y)));
+            const solved=solveDepth(w,h,zv,zh,zs);
+            const bad=!isFinite(solved);
+            rows+=`<div class="tracker-row">
+              <span class="tracker-lbl">${g.id}</span>
+              <span class="tracker-val ${bad?'bad':''}">
+                ${bad?'SINGULAR':('CALC Z: '+solved.toFixed(1))}</span></div>`;
+        });
+        document.getElementById('tracker-data').innerHTML=rows;
+        document.getElementById('rzv').textContent=zv.toFixed(0);
+        document.getElementById('rzh').textContent=zh.toFixed(0);
+        document.getElementById('rr').textContent=
+            Math.sqrt(zv*zh).toFixed(2);          // mirror radius, live
+    }
+
+    // --- Controls ---
+    document.getElementById('slider-v').addEventListener('input',e=>{
+        zv=+e.target.value; redraw(); updateHUD();
+    });
+    document.getElementById('slider-h').addEventListener('input',e=>{
+        zh=+e.target.value; redraw(); updateHUD();
+    });
+    document.getElementById('slider-z').addEventListener('input',e=>{
+        dz=+e.target.value; redraw(); updateHUD();
+    });
+
+    // --- Go ---
+    redraw(); updateHUD();
+</script>
+</body>
+</html>
