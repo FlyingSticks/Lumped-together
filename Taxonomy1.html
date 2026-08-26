@@ -94,7 +94,7 @@
         <dt>A theorem is</dt><dd>A consequence the axioms force.</dd>
         <dt>"Same" means</dt><dd>Isomorphism of the incidence structure.</dd>
         <dt>Climbs the ladder by</dt><dd><b>Adding axiom groups</b> — incidence → parallels → congruence → a unit.</dd>
-        <dt>In the companion</dt><dd>Group I — Camera<span class="mono">C1–C3</span>); Group II — Image (<span class="mono">M0–M4</span>).</dd>
+        <dt>In the companion</dt><dd>Group I — Camera (<span class="mono">C1–C3</span>); Group II — Image (<span class="mono">M0–M4</span>).</dd>
       </dl>
     </div>
     <div class="mcard" style="--acc:var(--purple)">
@@ -277,7 +277,7 @@
   ];
   let active=0;
 
-  const NS="http://www.w3/2000/svg";
+  const NS="http://www.w3.org/2000/svg";
   const el=(n,at)=>{const e=document.createElementNS(NS,n);for(const k in at)e.setAttribute(k,at[k]);return e;};
   const T=(x,y,s,fill,anchor,weight)=>{const t=el("text",{x:x,y:y,"font-family":SANS,"font-size":s,fill:fill,
     "text-anchor":anchor||"start","font-weight":weight||400});return t;};
@@ -333,7 +333,9 @@
     const g3=T(bxx+22,bMid+26,9.5,C.muted,"start",400);g3.textContent="numbers pinned";svg.appendChild(g3);
   })();
 
-
+  const detail=document.getElementById("detail");
+  function render(){
+    hls.forEach
 ```
 
 > ⚠️ The response reached the length limit. Reply **continue** to get the rest.
