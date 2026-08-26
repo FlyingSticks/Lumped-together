@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Tetra Engine: Dual Cross-Slit</title>
+<style>
+    body { margin: 0; padding: 0; background: #050505; color: #fff;
+           font-family: 'Segoe UI', monospace; overflow: hidden;
+           height: 100vh; height: 100dvh; display: flex; flex-direction: column; }
+
+    header { height: 40px; background: #111; border-bottom: 1px solid #333;
+             display: flex; align-items: center; justify-content: space-between;
+             padding: 0 20px; flex-shrink: 0; }
+    h1 { font-size: 14px; margin: 0; color: #e8e8ff; letter-spacing: 1px;
+         text-transform: uppercase; }
+    .tag { background: #101a2a; padding: 2px 6px; border-radius: 4px;
+           font-size: 10px; color: #8fb8ff; border: 1px solid #2e4a75;
+           white-space: nowrap; }
+
+    #stage { flex: 1; display: flex; position: relative; min-height: 0; }
+    .panel { flex: 1; position: relative; min-width: 0; min-height: 0; }
+    .panel + .panel { border-left: 1px solid #222; }
+    canvas { width: 100%; height: 100%; display: block; touch-action: none; }
+    .panel-cap { position: absolute; top: 8px; left: 10px; z-index: 5;
+        font-family: monospace; font-size: 11px; color: #888;
+        background: rgba(0,0,0,0.7); padding: 2px 8px; border-radius: 3px;
+        border: 1px solid #333; pointer-events: none; letter-spacing: 1px; }
+    .panel-cap b { color: #ddd; }
+    /* NEW: clamp badge */
+    .clamp-badge { position: absolute; bottom: 10px; left: 10px; z-index: 6;
+        background: rgba(120,60,10,0.9); border: 1px solid #b08948;
+        color: #ffe08a; font-family: monospace; font-size: 10px;
+        padding: 3px 8px; border-radius: 3px; display: none;
+        pointer-events: none; letter-spacing: 1px; }
+
+    .overlay-info { position: absolute; top: 34px; left: 10px; z-index: 10;
+        background: rgba(0,0,0,0.85); padding: 8px 12px; border-radius: 4px;
+        border: 1px solid #444; pointer-events: none; font-family: monospace;
+        font-size: 11px; line-height: 1.7; max-width: 360px; }
+    .dim { color: #888; }
+    .cA  { color: #ff7a88; }   /* channel A — red */
+    .cB  { color: #5fe0d0; }   /* channel B — cyan */
+    .csingle { color: #ff7a88; font-weight: bold; }
+    .cdual   { color: #8fffb0; font-weight: bold; }
+    .cP  { color: #d0a8ff; }
+    .fuse { color: #ffe08a; font-weight: bold; }
+
+    #panel { position: absolute; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); left: 50%;
+        transform: translateX(-50%); z-index: 10; width: min(600px, 94vw);
+        background: rgba(10,10,15,0.92); border: 1px solid #333;
+        border-radius: 4px; padding: 10px 14px; font-family: monospace; }
+    #panel label { display: flex; justify-content: space-between;
+        font-size: 11px; color: #888; margin: 6px 0 2px; }
+    #panel label:first-child { margin-top: 0; }
+    #panel input[type=range] { width: 100%; accent-color: #8fb8ff; }
+    .btn-row { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap;
+        justify-content: center; }
+    button { background: #1a1a22; color: #ccc; border: 1px solid #444;
+        border-radius: 4px; font-family: monospace; font-size: 11px;
+        padding: 5px 10px; cursor: pointer; }
+    button.active { background: #14202e; color: #8fb8ff; border-color: #3d6aa3; }
+    button:focus-visible { outline: 2px solid #8fb8ff; }
+
+    @media (max-width: 700px), (orientation: portrait) {
+        #stage { flex-direction: column; }
+        .panel + .panel { border-left: none; border-top: 1px solid #222; }
+        .overlay-info { font-size: 10px; max-width: 250px; }
+        h1 { font-size: 11px; }
+    }
+</style>
+</head>
+<body>
+
+<header>
+    <h1>Dual Cross-Slit <span style="color:#666">//</span> Addendum A10</h1>
+    <!-- CORRECTION #1: mirror radius named alongside rig constants -->
+    <div class="tag">RIG Z&#8330;=150 Zh=250 &middot; R=&radic;(Z&#8330;Zh)&asymp;193.65 &middot; SHAPE STEREOPSIS</div>
+</header>
+
+<div id="stage">
+    <div class="panel">
+        <canvas id="cvan"></canvas>
+        <div class="panel-cap"><b>ANAGLYPH</b> &mdash; two channels, 90&deg; apart;
+             disparity is SHAPE, not offset</div>
+        <!-- CORRECTION #2: clamp state is announced -->
+        <div class="clamp-badge" id="clampBadge">ASPECT CLAMPED &mdash; drawing no longer
+             tracks readouts near pole</div>
+        <div class="overlay-info">
+            <div><span class="dim">target depth z =</span>
+                 <span id="zTrue" class="cP">350.0</span></div>
+            <div><span class="cA">channel A</span>
+                 <span class="dim">AR&#8320; =</span> <span id="arA" class="cA">0.300</span>
+                 &nbsp; <span class="cB">channel B</span>
+                 <span class="dim">AR&#8331; =</span> <span id="arB" class="cB">3.333</span></div>
+            <div><span class="dim">disparity D = AR&#8320;/AR&#8331; =</span>
+                 <span id="dDisp" class="cP">0.090</span>
+                 <span class="dim" id="fuseLbl"></span></div>
+            <div><span class="dim">measured AR&#8320; (noisy) =</span>
+                 <span id="arAn" class="cA">&mdash;</span>
+                 &nbsp;<span class="dim">err</span> <span id="eNoise" class="dim">&mdash;</span></div>
+            <div class="dim" id="hint" style="font-size:10px; margin-top:4px">
+                Drag depth: the two coloured ellipses are the same target seen by
+                the two channels. Their shapes are reciprocal &mdash; that
+                difference is the depth cue.
+            </div>
+        </div>
+    </div>
+    <div class="panel">
+        <canvas id="cvz"></canvas>
+        <div class="panel-cap"><b>DEPTH READOUT</b> &mdash; one channel fooled,
+             the ratio locked</div>
+        <div class="overlay-info">
+            <div><span class="dim">impostor (ellipticity &times; PSF) =</span>
+                 <span id="rhoDisp" class="cP">1.00</span></div>
+            <div><span class="csingle">single channel</span>
+                 <span class="dim">z&#770; =</span> <span id="zSingle" class="csingle">350.0</span>
+                 <span class="dim">err</span> <span id="eSingle">+0.0</span></div>
+            <div><span class="cdual">dual ratio</span>
+                 <span class="dim">z&#770; =</span> <span id="zDual" class="cdual">350.0</span>
+                 <span class="dim">err</span> <span id="eDual">0e+0</span></div>
+            <div><span class="csingle">single, noisy AR</span>
+                 <span class="dim">z&#770; =</span> <span id="zSn" class="csingle">&mdash;</span>
+                 <span class="dim">err</span> <span id="eSn" class="dim">&mdash;</span></div>
+            <div><span class="cdual">dual, noisy ARs</span>
+                 <span class="dim">z&#770; =</span> <span id="zDn" class="cdual">&mdash;</span>
+                 <span class="dim">err</span> <span id="eDn" class="dim">&mdash;</span></div>
+            <div class="dim" style="font-size:10px; margin-top:4px" id="hint2">
+                Raise the impostor: the single channel drifts (ellipticity looks
+                like depth). The channel ratio cancels it exactly &mdash; the
+                dual estimate does not move.
+            </div>
+        </div>
+    </div>
+
+    <div id="panel">
+        <label><span>target depth z</span><span id="zlab">350.0</span></label>
+        <input type="range" id="zslide" min="160" max="450" step="0.5" value="350">
+        <label><span>impostor: intrinsic ellipticity &times; PSF asymmetry</span>
+               <span id="elab">1.00</span></label>
+        <input type="range" id="eslide" min="0.7" max="1.4" step="0.01" value="1.0">
+        <div class="btn-row">
+            <button id="bnoise" title="jitter the drawn ellipses AND the measured aspect ratios">Noise</button>
+            <button id="bhoro">Go to horopter</button>
+            <button id="breset">Reset</button>
+        </div>
+        <div class="dim" style="font-size:9.5px; margin-top:6px; line-height:1.5"
+             id="coinNote">
+            Note: at the horopter z* = 2Z&#8320;Zh/(Z&#8320;+Zh) = 187.5 three things coincide
+            &mdash; |AR| = 1 so the channels fuse; the single-channel reading carries
+            maximal ambiguity; and the acuity law's poles balance.
+        </div>
+    </div>
+</div>
+
+<script>
+"use strict";
+/* ============================================================
+   PROVENANCE (house pattern):
+   implements Addendum A10 of the glide/cross-slit thread.
+   Solver V21 identical verbatim to violin-portrait decode
+   (same Mobius inverse, same convention). Fusion/horopter
+   coincidence verified against demo 34 (check_stereopsis.js).
+   Rig: Zv=150, Zh=250; R = sqrt(Zv*Zh) ~ 193.65.
+   ============================================================ */
+
+// ================================================================ RIG
+const Zv = 150, Zh = 250, D = Zh - Zv;
+const ZSTAR = 2*Zv*Zh/(Zv + Zh);                 // horopter = 187.5
+
+// ---- the verified relations of Addendum A10 / check_stereopsis.js ----
+// channel A aspect ratio (Theorem 7 convention Mx/My)
+function arA(z) { return (Zv*(z - Zh)) / (Zh*(z - Zv)); }
+// channel B is A rotated 90deg: exactly reciprocal
+function arB(z) { return 1 / arA(z); }
+// Solver V2.1: exact Mobius inverse of the aperture cross-ratio
+function V21(ar) { return Zv*Zh*(ar - 1) / (ar*Zh - Zv); }
+// disparity signal D = AR_A / AR_B = AR_A^2
+function disparity(z) { return arA(z) / arB(z); }
+
+// ================================================================ STATE
+let z = 350, rho = 1.0, noise = false;
+let animGoal = null;                              // for the "go to horopter" glide
+const el = (id) => document.getElementById(id);
+let t0 = performance.now();
+
+// ================================================================ CANVASES
+const cvan = el("cvan"), can = cvan.getContext("2d");
+const cvz  = el("cvz"),  cz  = cvz.getContext("2d");
+let WA = 0, HA = 0, WZ = 0, HZ = 0;
+
+function resize() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    WA = cvan.clientWidth; HA = cvan.clientHeight;
+    cvan.width = WA*dpr; cvan.height = HA*dpr; can.setTransform(dpr,0,0,dpr,0,0);
+    WZ = cvz.clientWidth; HZ = cvz.clientHeight;
+    cvz.width = WZ*dpr; cvz.height = HZ*dpr; cz.setTransform(dpr,0,0,dpr,0,0);
+}
+window.addEventListener("resize", resize);
+
+// ================================================================ ANAGLYPH
+const CLAMP_LO = 0.22, CLAMP_HI = 4.5;           // named constants, state exposed
+let clampedNow = false;
+function ellipse(ctx, cx, cy, rx, ry, color) {
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";     // red + cyan overlap -> white
+    ctx.strokeStyle = color; ctx.lineWidth = 2.5; ctx.globalAlpha = 0.95;
+    ctx.beginPath(); ctx.ellipse(cx, cy, rx, ry, 0, 0, 6.2832); ctx.stroke();
+    ctx.globalAlpha = 0.13; ctx.fillStyle = color; ctx.fill();
+    ctx.restore();
+}
+// smooth deterministic pseudo-noise, amplitude-scaled
+function jit(now, s) {
+    return (Math.sin(now*0.017+s)+Math.sin(now*0.031+2*s))*s;
+}
+function drawAnaglyph(now) {
+    can.clearRect(0, 0, WA, HA);
+    can.fillStyle = "#050505"; can.fillRect(0, 0, WA, HA);
+    const cx = WA/2, cy = HA/2;
+    const R = Math.min(WA, HA) * 0.26;
+
+    // measured shapes: intrinsic ellipticity rho multiplies BOTH channels alike
+    let jx = 0, jy = 0;
+    if (noise) { jx = jit(now, 2.2); jy = jit(now, 1.7); }
+
+    const rawA = Math.abs(arA(z)) * rho;
+    const rawB = Math.abs(arB(z)) * rho;
+    const aA = Math.max(CLAMP_LO, Math.min(CLAMP_HI, rawA));
+    const aB = Math.max(CLAMP_LO, Math.min(CLAMP_HI, rawB));
+    // CORRECTION #2: announce the clamp instead of diverging silently
+    clampedNow = (rawA !== aA) || (rawB !== aB);
+    el("clampBadge").style.display = clampedNow ? "block" : "none";
+
+    // faint "true round target" reference
+    can.save(); can.strokeStyle = "#444"; can.lineWidth = 1;
+    can.setLineDash([4,4]); can.beginPath();
+    can.ellipse(cx, cy, R, R, 0, 0, 6.2832); can.stroke(); can.restore();
+
+    // channel A (red), channel B (cyan) — area-preserving so aspect is the whole story
+    ellipse(can, cx+jx, cy+jy, R*Math.sqrt(aA), R/Math.sqrt(aA), "#ff3a4a");
+    ellipse(can, cx-jx, cy-jy, R*Math.sqrt(aB), R/Math.sqrt(aB), "#30ffe0");
+
+    // fusion flag near the horopter
+    const near = Math.abs(disparity(z) - 1) < 0.06;
+    if (near) {
+        can.save(); can.font = "12px monospace"; can.fillStyle = "#ffe08a";
+        can.textAlign = "center";
+        can.fillText("D \u2248 1  \u00b7  CHANNELS FUSE (horopter)", cx, cy - R - 16);
+        can.restore();
+    }
+    can.save(); can.font = "10px monospace"; can.textAlign = "center";
+    can.fillStyle = "#ff7a88"; can.fillText("A", cx - R*0.5, cy + R + 22);
+    can.fillStyle = "#5fe0d0"; can.fillText("B", cx + R*0.5, cy + R + 22);
+    can.restore();
+}
+
+// ================================================================ DEPTH AXIS
+const ZMIN = 160, ZMAX = 450;
+function zx(zv) { const m = 46; return m + (zv - ZMIN)/(ZMAX - ZMIN)*(WZ - 2*m); }
+// CORRECTION #3: shared noise model for drawn shapes AND estimators
+const NOISE_AMP = 0.06;                          // multiplicative sigma on measured AR
+function noisyAR(zTrue, now) {
+    if (!noise) return arA(zTrue);
+    const f = 1 + NOISE_AMP*Math.sin(now*0.013 + zTrue*0.05)
+                + NOISE_AMP*0.6*Math.sin(now*0.041);
+    return arA(zTrue)*f;
+}
+function drawDepth(now) {
+    cz.clearRect(0, 0, WZ, HZ);
+    cz.fillStyle = "#050505"; cz.fillRect(0, 0, WZ, HZ);
+    const axisY = HZ*0.62;
+
+    // axis
+    cz.strokeStyle = "#555"; cz.lineWidth = 1;
+    cz.beginPath(); cz.moveTo(zx(ZMIN), axisY); cz.lineTo(zx(ZMAX), axisY); cz.stroke();
+    cz.font = "9px monospace"; cz.fillStyle = "#777"; cz.textAlign = "center";
+    for (let zv = 200; zv <= 450; zv += 50) {
+        cz.strokeStyle = "#333"; cz.beginPath();
+        cz.moveTo(zx(zv), axisY-4); cz.lineTo(zx(zv), axisY+4); cz.stroke();
+        cz.fillText(zv, zx(zv), axisY + 16);
+    }
+    // slit planes and horopter
+    cz.setLineDash([3,3]);
+    for (const [zv, c, t] of [[Zh, "#3a5a80", "Zh"], [ZSTAR, "#ffe08a", "z*=187.5"]]) {
+        cz.strokeStyle = c; cz.beginPath();
+        cz.moveTo(zx(zv), axisY-38); cz.lineTo(zx(zv), axisY+8); cz.stroke();
+        cz.fillStyle = c; cz.fillText(t, zx(zv), axisY - 44);
+    }
+    cz.setLineDash([]);
+
+    const arClean = arA(z);
+    const zS = V21(arClean * rho);                              // single: fooled
+    const branch = Math.sign(arClean);
+    const zD = V21(branch * Math.sqrt(disparity(z)));           // dual: ratio cancels rho
+
+    // CORRECTION #3: noisy measurements feed the estimators too
+    let zSn = NaN, zDn = NaN;
+    if (noise) {
+        const arN = noisyAR(z, now);                            // channel A, noisy
+        const arBn = 1/arN;                                     // B stays reciprocal of A's measurement
+        zSn = V21(arN * rho);
+        const brN = Math.sign(arN);
+        zDn = V21(brN * Math.sqrt(arN/arBn));
+    }
+
+    // markers
+    const mark = (zv, color, label, dy) => {
+        if (!isFinite(zv) || zv < ZMIN || zv > ZMAX) return;
+        const x = zx(zv);
+        cz.save(); cz.shadowColor = color; cz.shadowBlur = 8;
+        cz.fillStyle = color; cz.beginPath();
+        cz.arc(x, axisY + dy, 5, 0, 6.2832); cz.fill(); cz.restore();
+        cz.fillStyle = color; cz.font = "10px monospace"; cz.textAlign = "center";
+        cz.fillText(label, x, axisY + dy + (dy < 0 ? -9 : 17));
+    };
+    // truth (violet), dual (green, on truth), single (red, drifts)
+    mark(z,  "#d0a8ff", "true", -20);
+    mark(zD, "#8fffb0", "dual", -34);
+    mark(zS, "#ff5a6a", "single", 26);
+    if (noise) { mark(zSn, "#ff8fa0", "n-single", 40); mark(zDn, "#baffd0", "n-dual", -48); }
+
+    // error bar single->true
+    if (isFinite(zS)) {
+        cz.strokeStyle = "#ff5a6a"; cz.globalAlpha = 0.6; cz.lineWidth = 2;
+        cz.beginPath(); cz.moveTo(zx(z), axisY); cz.lineTo(zx(zS), axisY); cz.stroke();
+        cz.globalAlpha = 1;
+    }
+    return { zS, zD, zSn, zDn };
+}
+
+// ================================================================ HUD
+function updateHUD(res) {
+    el("zTrue").textContent = z.toFixed(1);
+    el("zlab").textContent  = z.toFixed(1);
+    el("arA").textContent   = arA(z).toFixed(3);
+    el("arB").textContent   = arB(z).toFixed(3);
+    const Dv = disparity(z);
+    el("dDisp").textContent = Dv.toFixed(3);
+    el("fuseLbl").textContent = Math.abs(Dv - 1) < 0.06 ? "  \u2190 fuses" : "";
+    el("rhoDisp").textContent = rho.toFixed(2);
+    el("elab").textContent    = rho.toFixed(2);
+    el("zSingle").textContent = isFinite(res.zS) ? res.zS.toFixed(1) : "\u2014";
+    el("zDual").textContent   = res.zD.toFixed(1);
+    const eS = res.zS - z, eD = res.zD - z;
+    el("eSingle").textContent = (eS >= 0 ? "+" : "") + eS.toFixed(1);
+    el("eSingle").style.color = Math.abs(eS) > 1 ? "#ff5a6a" : "#8fffb0";
+    el("eDual").textContent   = eD.toExponential(0);
+
+    // CORRECTION #3 readouts: noise visible in the numbers, not just the drawing
+    if (noise) {
+        const arN = noisyAR(z, performance.now());
+        el("arAn").textContent  = arN.toFixed(3);
+        el("eNoise").textContent =
+            (((arN - arA(z))/Math.abs(arA(z)||1))*100).toFixed(1)+"%";
+        el("zSn").textContent = isFinite(res.zSn) ? res.zSn.toFixed(1) : "\u2014";
+        el("zDn").textContent = isFinite(res.zDn) ? res.zDn.toFixed(1) : "\u2014";
+        const eN1 = res.zSn - z, eN2 = res.zDn - z;
+        el("eSn").textContent = isFinite(eN1) ? ((eN1>=0?"+":"")+eN1.toFixed(1)) : "\u2014";
+        el("eSn").style.color = isFinite(eN1) && Math.abs(eN1) > 1 ? "#ff5a6a" : "#8fffb0";
+        el("eDn").textContent = isFinite(eN2) ? eN2.toExponential(0) : "\u2014";
+    } else {
+        el("arAn").textContent = "\u2014"; el("eNoise").textContent = "\u2014";
+        el("zSn").textContent = "\u2014"; el("eSn").textContent = "\u2014";
+        el("zDn").textContent = "\u2014"; el("eDn").textContent = "\u2014";
+    }
+}
+
+// ================================================================ LOOP
+function frame(now) {
+    if (animGoal !== null) {
+        z += (animGoal - z) * 0.12;
+        if (Math.abs(animGoal - z) < 0.05) { z = animGoal; animGoal = null; }
+        el("zslide").value = z.toFixed(1);
+    }
+    drawAnaglyph(now);
+    updateHUD(drawDepth(now));
+    requestAnimationFrame(frame);
+}
+
+// ================================================================ CONTROLS
+el("zslide").addEventListener("input", (e) => { z = +e.target.value; animGoal = null; });
+el("eslide").addEventListener("input", (e) => { rho = +e.target.value; });
+el("bnoise").addEventListener("click", (e) => {
+    noise = !noise; e.target.classList.toggle("active", noise);
+});
+el("bhoro").addEventListener("click", () => { animGoal = ZSTAR; });
+el("breset").addEventListener("click", () => {
+    z = 350; rho = 1.0; noise = false; animGoal = null;
+    el("zslide").value = "350"; el("eslide").value = "1.0";
+    el("bnoise").classList.remove("active");
+});
+
+// ================================================================ SELF-CHECK
+// family standard: assert the core relations on load (console)
+(function selfCheck(){
+    const ok = [];
+    ok.push(["V21 inverts arA", [200,250,300,350,400].every(
+        zz => Math.abs(V21(arA(zz)) - zz) < 1e-9)]);
+    ok.push(["channels reciprocal", [200,300,400].every(
+        zz => Math.abs(arA(zz)*arB(zz) - 1) < 1e-12)]);
+    ok.push(["horopter fuses: |arA(z*)|=1",
+        Math.abs(Math.abs(arA(ZSTAR)) - 1) < 1e-12]);
+    ok.push(["horopter = harmonic mean", Math.abs(ZSTAR - 187.5) < 1e-12]);
+    ok.push(["dual cancels impostor", [0.7,1.0,1.4].every(
+        r => { const b=Math.sign(arA(350));
+               return Math.abs(V21(b*Math.sqrt((arA(350)*r)/(arB(350)*r))) - 350) < 1e-9; })]);
+    const bad = ok.filter(o => !o[1]);
+    console.log("[selfcheck] "+(ok.length-bad.length)+"/"+ok.length+" relations hold");
+    bad.forEach(o => console.error("[selfcheck] FAIL:", o[0]));
+})();
+
+// ================================================================ GO
+resize();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
