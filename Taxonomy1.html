@@ -56,7 +56,7 @@
   .detail dd{margin:2px 0 0}
   .detail ul{margin:2px 0 0;padding-left:17px}
   .detail li{margin:1px 0}
-  .detail .sep{margin-top:9px;font-size:12.5px;font-style:italic;color:var(--crimson)}
+  .detail dd.sep{margin-top:9px;font-style:italic;color:var(--crimson)}
   .kind{font-family:var(--sans);font-size:10px;font-weight:700;letter-spacing:.05em;padding:2px 8px;border-radius:2px}
   .kind.desc{color:var(--green);border:1px solid var(--green)}
   .kind.inst{color:var(--crimson);border:1px solid var(--crimson)}
@@ -112,7 +112,7 @@
   <p class="bridge">Not rivals — two descriptions of the <b>same</b> plane, certified both ways. <b>Theorem 2</b>: the synthetic axioms force the classical model, chain geometry over <span class="mono">ℝ⊕ℝ</span>. <b>Theorem 5.4</b>: every automorphism of that structure is induced by <span class="mono">G</span>. And crucially — the ladder below is <b>not</b> Klein's private property. Both descriptions climb the same rungs; each just names the ascent in its own coin.</p>
 
   <h2 class="sec">Axis 2 — The ladder both methods climb</h2>
-  <p class="hint">Tap a rung. Down the ladder: nominate more → the group shrinks (Klein) / an axiom group is added (Hilbert) → invariants sharpen. Each nomination also fixes part of the <b>gauge</b> — the freedom of description the nominated structure has not yet pinned. Below the crimson line, description becomes measurement. The classical tower has <b>four</b> rungs; the companion's §7 fuses the last two into Level 3, "Calibrated," because the rig pins the actual numbers.</p>
+  <p class="hint">Tap a rung (or Tab to it and press Enter). Down the ladder: nominate more → the group shrinks (Klein) / an axiom group is added (Hilbert) → invariants sharpen. Each nomination also fixes part of the <b>gauge</b> — the freedom of description the nominated structure has not yet pinned. Below the crimson line, description becomes measurement. The classical tower has <b>four</b> rungs; the companion's §7 fuses the last two into Level 3, "Calibrated," because the rig pins the actual numbers.</p>
   <div class="ladderwrap">
     <svg id="ladder" class="fig" viewBox="0 0 600 412" role="img"
          aria-label="The Erlangen / vision ladder: projective, affine, metric, Euclidean"></svg>
@@ -335,7 +335,7 @@
 
   const detail=document.getElementById("detail");
   function render(){
-    hls.forEach
+    hls.forEach((h,i)=>h.setAttribute
 ```
 
 > ⚠️ The response reached the length limit. Reply **continue** to get the rest.
