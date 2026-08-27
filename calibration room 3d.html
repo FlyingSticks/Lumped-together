@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Calibration — a Gridded Room in Cross-Slit Projection</title>
+<style>
+  :root{
+    --cream:#FAF4E6; --paper:#F3EAD3; --ink:#34232E; --faint:#e4d9bf;
+    --plum:#6D2C56; --purple:#6A3B96; --crimson:#A62A3E; --blue:#2F5FA6;
+    --gold:#B07D22; --green:#3C6B4E; --good:#3C6B4E; --muted:rgba(52,35,46,0.55);
+    --serif:"Iowan Old Style","Palatino Linotype",Georgia,serif;
+    --sans:"Helvetica Neue",Arial,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--cream);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:860px;margin:0 auto;padding:18px 12px 40px;}
+  .eyebrow{font-size:11px;letter-spacing:.22em;color:var(--plum);font-weight:600;text-transform:uppercase;}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(24px,4.6vw,34px);line-height:1.08;margin:5px 0 4px;}
+  h1 em{font-style:italic;color:var(--plum);}
+  .sub{font-size:13.5px;color:var(--muted);line-height:1.5;margin:0 0 14px;max-width:680px;}
+  .sub b{color:var(--ink);} .sub em{color:var(--plum);font-style:italic;}
+  .card{background:var(--paper);border:1px solid var(--faint);border-radius:5px;
+    box-shadow:0 6px 22px rgba(52,35,46,.08);padding:10px 12px 8px;margin-bottom:12px;}
+  svg{width:100%;height:auto;display:block;border-radius:4px;touch-action:none;
+    user-select:none;-webkit-user-select:none;cursor:grab;background:#fbf7ec;}
+  svg.grabbing{cursor:grabbing;}
+  .math{font-family:var(--serif);}
+  .hint{font-size:11px;color:var(--muted);text-align:center;margin:0 0 4px;}
+  .ctl{display:grid;grid-template-columns:auto 1fr auto;gap:7px 10px;align-items:center;margin:8px 4px 4px;}
+  .ctl label{font-size:12px;color:var(--muted);}
+  .ctl .val{font-family:var(--serif);font-size:12.5px;min-width:60px;text-align:right;}
+  input[type=range]{-webkit-appearance:none;appearance:none;height:5px;border-radius:5px;outline:none;}
+  #sZ{background:linear-gradient(90deg,var(--green),var(--faint));}
+  #sA{background:linear-gradient(90deg,#bcd0ea,var(--blue));}
+  #sB{background:linear-gradient(90deg,#e6bcc2,var(--crimson));}
+  #sS{background:linear-gradient(90deg,var(--ink),var(--faint));}
+  input[type=range]:disabled{opacity:.4;}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;
+    background:var(--cream);border:2.5px solid var(--ink);cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.22);}
+  input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:var(--cream);border:2.5px solid var(--ink);cursor:pointer;}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:4px 4px 2px;}
+  .tag{font-size:11px;color:var(--muted);letter-spacing:.08em;align-self:center;}
+  button{font-family:inherit;font-size:12px;color:var(--ink);background:var(--cream);
+    border:1px solid var(--muted);border-radius:20px;padding:6px 11px;cursor:pointer;}
+  button:hover{background:var(--paper);} button.on{background:var(--ink);color:var(--cream);border-color:var(--ink);}
+  button:focus-visible{outline:2px solid var(--purple);outline-offset:2px;}
+  .grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px 12px;margin:6px 2px 6px;}
+  .cell{background:var(--paper);border:1px solid var(--faint);border-radius:6px;padding:8px 10px;}
+  .cell .k{font-size:10px;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;}
+  .cell .v{font-family:var(--serif);font-size:16px;margin-top:2px;}
+  .wide{grid-column:1 / -1;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;}
+  .badge{font-size:11.5px;font-weight:700;color:#fff;background:var(--good);border-radius:20px;padding:3px 10px;}
+  details{background:var(--paper);border:1px solid var(--faint);border-radius:6px;padding:2px 12px;margin:6px 0 12px;}
+  summary{cursor:pointer;list-style:none;padding:11px 0;font-family:var(--serif);font-weight:700;font-size:15px;color:var(--ink);}
+  summary::-webkit-details-marker{display:none;} summary::after{content:"＋";float:right;color:var(--muted);font-weight:400;}
+  details[open] summary::after{content:"−";}
+  details .body{font-size:12.5px;color:var(--muted);line-height:1.6;padding:0 0 10px;}
+  details .body p{margin:0 0 9px;} details .body b{color:var(--ink);} details .body .mono{font-family:var(--serif);}
+  details .body h4{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:12px 0 5px;font-weight:600;}
+  .foot{font-size:12px;color:var(--muted);line-height:1.55;margin:2px 4px 0;} .foot b{color:var(--ink);}
+  @media(max-width:560px){ .grid{grid-template-columns:1fr 1fr;} .cell .v{font-size:14px;} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">Double-Slit Geometry · The Calibrated Reading · Room Scale</div>
+  <h1>Calibration — <em>a gridded room in cross-slit projection</em></h1>
+  <p class="sub">Two slits and a nominated screen turn a room's interior into a measured image. The transversal
+  frames stay rectangles, but the <b>depth lines curve</b> toward a central vanishing point — the cross-slit
+  signature. <b>Calibrate</b> by fixing the two slit depths and the screen, and every frame's aspect ratio becomes
+  its own depth: <em>the aspect ratio is the cross-ratio along the ray (Theorem 7)</em>. Merge the slits and the
+  lines straighten — but the depth reading vanishes.</p>
+
+  <div class="card">
+    <p class="hint">drag to rotate · scroll to zoom</p>
+    <svg id="svg" viewBox="0 0 780 620" role="img"
+      aria-label="Rotatable scene: a green gridded room receding in depth, two slits, and a picture plane carrying the purple projected image whose depth lines curve toward the vanishing point.">
+      <g id="scene"></g>
+    </svg>
+    <div class="ctl">
+      <label>room depth (Z)</label>
+      <input id="sZ" type="range" min="0" max="1000" value="340" step="1" aria-label="room depth">
+      <span class="val" id="vZ">—</span>
+      <label>slit ℓ₁ <span style="color:var(--blue)">(x · blue)</span></label>
+      <input id="sA" type="range" min="90" max="210" value="150" step="1" aria-label="vertical slit depth">
+      <span class="val" id="vA">150</span>
+      <label>slit ℓ₂ <span style="color:var(--crimson)">(y · red)</span></label>
+      <input id="sB" type="range" min="220" max="320" value="250" step="1" aria-label="horizontal slit depth">
+      <span class="val" id="vB">250</span>
+      <label>screen position</label>
+      <input id="sS" type="range" min="-40" max="55" value="0" step="1" aria-label="screen depth">
+      <span class="val" id="vS">0</span>
+    </div>
+    <div class="row">
+      <span class="tag">CALIBRATION:</span>
+      <button id="bCross" class="on">cross-slit (curved · reads depth)</button>
+      <button id="bPin">merge → pinhole (straight · no depth)</button>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="cell"><div class="k" style="color:var(--blue)">slit ℓ₁</div><div class="v" id="oA">150</div></div>
+    <div class="cell"><div class="k" style="color:var(--crimson)">slit ℓ₂</div><div class="v" id="oB">250</div></div>
+    <div class="cell"><div class="k">screen · vanishing pt</div><div class="v" id="oVP">z=0</div></div>
+    <div class="cell"><div class="k" style="color:var(--purple)">front frame aspect</div><div class="v math" id="oAR">—</div></div>
+    <div class="cell"><div class="k" style="color:var(--green)">decoded depth Z</div><div class="v math" id="oZ">—</div></div>
+    <div class="cell"><div class="k">true room front Z</div><div class="v math" id="oZt">—</div></div>
+    <div class="cell wide">
+      <div>
+        <div class="k">the calibrated reading &#160; aspect ratio = ( ℓ₁, ℓ₂ ; screen, Z ) = depth</div>
+        <div class="v math" id="oLoop">decode(AR) = Z</div>
+      </div>
+      <span class="badge" id="oBadge">reads depth ✓</span>
+    </div>
+  </div>
+
+  <details>
+    <summary>How calibration works</summary>
+    <div class="body">
+      <p><b>The freedom.</b> A flat image can't see depth on its own — depth is a direction the image group is blind
+      to. Cross-slit imaging hands you two references at two depths (the slits, <span class="mono">ℓ₁</span> and
+      <span class="mono">ℓ₂</span>), and nominating a <b>screen</b> adds a third. Three fixed marks on every ray,
+      plus the object, make four — and four points on a line have a <b>cross-ratio</b>.</p>
+
+      <h4>The three acts of calibrating</h4>
+      <p><b>1 · Nominate the screen.</b> Fixing the picture plane is gauge-fixing: it turns the invisible depth
+      gauge into an observable. The vanishing point — where every depth line converges — is the screen's image of
+      the point at infinity.</p>
+      <p><b>2 · Fix the metric.</b> The two slit depths <span class="mono">a, b</span> are the calibration
+      constants. They set the aspect-ratio-to-depth law <span class="mono">AR(Z) = a(Z−b)/(b(Z−a))</span> and the
+      curvature of the depth lines, which grows with the gap <span class="mono">D = b − a</span>.</p>
+      <p><b>3 · Read.</b> Now every projected frame's aspect ratio <b>is</b> the cross-ratio
+      <span class="mono">(ℓ₁, ℓ₂ ; screen, Z)</span> along its ray — a measured depth. Invert it (a Möbius map) and
+      the image becomes metric 3D. The panel closes this loop live: front-frame aspect → decoded Z → the room's
+      true front depth.</p>
+
+      <h4>Why the depth lines curve</h4>
+      <p>A single pinhole scales x and y by the <b>same</b> factor, so depth lines run straight out of the
+      vanishing point — ordinary one-point perspective. Two slits at two depths scale x and y by
+      <b>different</b> factors, so a depth line bends: its aspect drifts with depth. The bend is the calibration
+      made visible. Merge the slits (a = b) and the two factors coincide — lines straighten, every frame images
+      square (AR ≡ 1), and the single center can no longer tell one depth from another. Cross-slit calibration
+      works precisely where a lone pinhole is blind.</p>
+      <p style="color:var(--plum)">Rig: ℓ₁ = 150, ℓ₂ = 250, screen z = 0. Verified in
+      <span class="mono">check calibration room.js</span> — 26 checks pass.</p>
+    </div>
+  </details>
+
+  <p class="foot">
+    Slide <b>room depth</b> and watch every frame's aspect ratio track its distance; the decoded Z stays locked to
+    the true depth. Move a <b>slit</b> to recalibrate — the curves and the reading update together. Push the
+    <b>screen</b> off zero and the reading shifts: that is the gauge you are fixing. Merge the slits and the
+    apparatus becomes a plain perspective that has forgotten depth.
+  </p>
+</div>
+
+<script>
+(function(){
+  function minus(s){ return s.replace(/^-/,"−"); }
+  function fmt(x,d){ return !isFinite(x)?"∞":minus(x.toFixed(d)); }
+
+  // ---------- orbit ----------
+  var st = { yaw:-0.62, pitch:0.26, scale:0.5, CZ:210, OX:380, OY:312 };
+  function xf(h,v,d){
+    var x=h, y=v, z=d-st.CZ;
+    var cy=Math.cos(st.yaw), sy=Math.sin(st.yaw);
+    var h1=x*cy+z*sy, z1=-x*sy+z*cy, v1=y;
+    var cp=Math.cos(st.pitch), sp=Math.sin(st.pitch);
+    var v2=v1*cp - z1*sp, z2=v1*sp + z1*cp;
+    return { x: st.OX + st.scale*h1, y: st.OY - st.scale*v2, z: z2 };
+  }
+  function P(o){ return o.x.toFixed(1)+","+o.y.toFixed(1); }
+  function Ln(A,B,s,w,ex){ return '<line x1="'+A.x.toFixed(1)+'" y1="'+A.y.toFixed(1)+'" x2="'+B.x.toFixed(1)+'" y2="'+B.y.toFixed(1)+'" stroke="'+s+'" stroke-width="'+w+'" '+(ex||'')+'/>'; }
+  function Poly(pts,s,w,ex){ return '<polyline points="'+pts.map(P).join(" ")+'" fill="none" stroke="'+s+'" stroke-width="'+w+'" '+(ex||'')+'/>'; }
+  function Dt(o,r,c){ return '<circle cx="'+o.x.toFixed(1)+'" cy="'+o.y.toFixed(1)+'" r="'+r+'" fill="'+c+'" stroke="#fbf7ec" stroke-width="1.1"/>'; }
+  function Tx(o,s,c,anc,sz,dy){ return '<text x="'+o.x.toFixed(1)+'" y="'+(o.y+(dy||0)).toFixed(1)+'" font-size="'+(sz||11)+'" fill="'+c+'" text-anchor="'+(anc||'middle')+'">'+s+'</text>'; }
+
+  var svg = document.getElementById('svg'), scene = document.getElementById('scene');
+  var drag=false,x0=0,y0=0,yw=0,pt=0;
+  svg.addEventListener('pointerdown',function(e){drag=true;x0=e.clientX;y0=e.clientY;yw=st.yaw;pt=st.pitch;svg.classList.add('grabbing');svg.setPointerCapture(e.pointerId);});
+  svg.addEventListener('pointermove',function(e){if(!drag)return;st.yaw=yw+(e.clientX-x0)*0.010;st.pitch=Math.max(-1.5533,Math.min(1.5533,pt+(e.clientY-y0)*0.010));render();});
+  function end(){drag=false;svg.classList.remove('grabbing');}
+  svg.addEventListener('pointerup',end); svg.addEventListener('pointercancel',end);
+  svg.addEventListener('wheel',function(e){e.preventDefault();st.scale=Math.max(0.3,Math.min(1.2,st.scale*Math.exp(-e.deltaY*0.0012)));render();},{passive:false});
+
+  var sZ=document.getElementById('sZ'), sA=document.getElementById('sA'), sB=document.getElementById('sB'), sS=document.getElementById('sS');
+  var pinhole=false;
+  document.getElementById('bCross').addEventListener('click',function(){pinhole=false;this.classList.add('on');document.getElementById('bPin').classList.remove('on');render();});
+  document.getElementById('bPin').addEventListener('click',function(){pinhole=true;this.classList.add('on');document.getElementById('bCross').classList.remove('on');render();});
+  [sZ,sA,sB,sS].forEach(function(el){el.addEventListener('input',render);});
+
+  var W = 46;                                   // room half-size
+  var Xs = [-W,-W/2,0,W/2,W];                    // grid positions
+  // depth-line seeds on the four walls (X0,Y0)
+  var seeds = [[-W,-W],[W,-W],[W,W],[-W,W],[0,-W],[W,0],[0,W],[-W,0]];
+
+  function render(){
+    var a=+sA.value, b=+sB.value; if(b<=a+12){ b=a+12; sB.value=b; }
+    var zs=+sS.value;
+    var aE=a, bE=b; if(pinhole){ var c=(a+b)/2; aE=c; bE=c; }
+    var frac=+sZ.value/1000, Zf = b + 60 + frac*260, Zb = Zf + 210;   // room front / back (beyond far slit)
+    var Zframes = [Zf, Zf+(Zb-Zf)/3, Zf+2*(Zb-Zf)/3, Zb];
+
+    // projection to the screen plane z = zs
+    function proj(X,Y,Z){ return { h: X*(zs-aE)/(Z-aE), v: Y*(zs-bE)/(Z-bE), d: zs }; }
+
+    var s = "";
+
+    // ---- optical axis + vanishing point ----
+    s += Ln(xf(0,0,zs-10), xf(0,0,Zb+30), '#d8cdb4', 1, 'stroke-dasharray="2 5"');
+
+    // ---- projectors: front-frame corners -> their screen images (straight rays) ----
+    [[-W,-W],[W,-W],[W,W],[-W,W]].forEach(function(c){
+      var w = { h:c[0], v:c[1], d:Zf }, m = proj(c[0],c[1],Zf);
+      s += Ln(xf(w.h,w.v,w.d), xf(m.h,m.v,m.d), 'var(--gold)', 1.1, 'opacity="0.7"');
+    });
+
+    // ---- slits ----
+    s += Ln(xf(0,-70,aE), xf(0,70,aE), 'var(--blue)', 2.6, '');
+    s += Ln(xf(-70,0,bE), xf(70,0,bE), 'var(--crimson)', 2.6, '');
+    if(!pinhole){
+      s += Tx(xf(0,-78,aE), 'ℓ₁', 'var(--blue)', 'middle', 10.5);
+      s += Tx(xf(74,0,bE), 'ℓ₂', 'var(--crimson)', 'start', 10.5);
+    } else {
+      s += Tx(xf(0,-78,aE), 'pinhole (ℓ₁=ℓ₂)', 'var(--ink)', 'middle', 10);
+    }
+
+    // ---- the room (green): depth lines + frames ----
+    seeds.forEach(function(sd){
+      s += Ln(xf(sd[0],sd[1],Zf), xf(sd[0],sd[1],Zb), 'rgba(60,107,78,0.55)', 1.1, '');
+    });
+    Zframes.forEach(function(Z,i){
+      var c=[[-W,-W],[W,-W],[W,W],[-W,W]];
+      s += Poly(c.concat([c[0]]).map(function(p){return xf(p[0],p[1],Z);}), 'var(--green)', i===0?1.9:1.2, '');
+    });
+    s += Tx(xf(0,-W-12,Zf), 'gridded room', 'var(--green)', 'middle', 10.5);
+
+    // ---- the projected image on the screen (purple): frames + CURVED depth lines ----
+    // screen card
+    var cardW = 78, cardH = 150;
+    s += '<path d="M'+[[-cardW,-cardH],[cardW,-cardH],[cardW,cardH],[-cardW,cardH]].map(function(p){return P(xf(p[0],p[1],zs));}).join(" L")+' Z" fill="rgba(52,35,46,0.04)" stroke="var(--ink)" stroke-width="1"/>';
+
+    // curved depth lines
+    seeds.forEach(function(sd){
+      var pts=[]; var N=10;
+      for(var i=0;i<=N;i++){ var Z=Zf+(Zb-Zf)*i/N; var m=proj(sd[0],sd[1],Z); pts.push(xf(m.h,m.v,m.d)); }
+      s += Poly(pts, 'var(--purple)', 1.2, pinhole?'':'opacity="0.95"');
+    });
+    // projected frames (rectangles)
+    Zframes.forEach(function(Z,i){
+      var c=[[-W,-W],[W,-W],[W,W],[-W,W]];
+      var pp=c.concat([c[0]]).map(function(p){var m=proj(p[0],p[1],Z);return xf(m.h,m.v,m.d);});
+      s += Poly(pp, 'var(--plum)', i===0?1.9:1.1, '');
+    });
+    // vanishing point
+    s += Dt(xf(0,0,zs), 3.2, 'var(--plum)');
+    s += Tx(xf(cardW,-cardH,zs), 'projected image', 'var(--purple)', 'start', 10, -4);
+    s += Tx(xf(0,cardH,zs), pinhole?'straight depth lines':'curved depth lines → V', 'var(--purple)', 'middle', 10, 14);
+
+    scene.innerHTML = s;
+
+    // ---- calibration readout ----
+    var AR = ((zs-aE)/(Zf-aE)) / ((zs-bE)/(Zf-bE));        // front-frame signed aspect
+    var CRv = ((zs-aE)*(Zf-bE)) / ((zs-bE)*(Zf-aE));       // = cross-ratio (aE,bE; zs, Zf)
+    // decode Z from AR with general screen zs:  AR = (zs-a)(Z-b)/((zs-b)(Z-a))
+    // -> Z = [ a(zs-b) AR - b(zs-a) ] / [ (zs-b) AR - (zs-a) ]
+    var Zdec = ( aE*(zs-bE)*AR - bE*(zs-aE) ) / ( (zs-bE)*AR - (zs-aE) );
+
+    document.getElementById('vZ').textContent = 'Z = ' + fmt(Zf,0);
+    document.getElementById('vA').textContent = a; document.getElementById('vB').textContent = b;
+    document.getElementById('vS').textContent = fmt(zs,0);
+    document.getElementById('oA').textContent = pinhole? fmt(aE,0)+' (merged)' : a;
+    document.getElementById('oB').textContent = pinhole? fmt(bE,0)+' (merged)' : b;
+    document.getElementById('oVP').textContent = 'z=' + fmt(zs,0);
+    document.getElementById('oAR').textContent = fmt(AR,3);
+    document.getElementById('oZt').textContent = fmt(Zf,0);
+
+    var reads = !pinhole && Math.abs(bE-aE) > 1e-6;
+    if(reads){
+      document.getElementById('oZ').textContent = fmt(Zdec,0);
+      document.getElementById('oLoop').textContent = 'AR ' + fmt(AR,3) + '  →  Z ' + fmt(Zdec,0) + '   (true ' + fmt(Zf,0) + ')';
+      var good = Math.abs(Zdec - Zf) < 0.5;
+      var bd=document.getElementById('oBadge'); bd.style.background = good?'var(--good)':'#b06a2f'; bd.textContent = good?'reads depth ✓':'≈';
+    } else {
+      document.getElementById('oZ').textContent = 'unreadable';
+      document.getElementById('oLoop').textContent = 'AR ≡ 1 at every depth — the single center cannot resolve Z';
+      var bd2=document.getElementById('oBadge'); bd2.style.background='#8a7d68'; bd2.textContent='depth lost';
+    }
+  }
+
+  render();
+})();
+</script>
+</body>
+</html>
