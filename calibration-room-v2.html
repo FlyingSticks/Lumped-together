@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The calibration room — a gridded room through the dial</title>
+<style>
+  :root{
+    --cream:#faf6ef; --paper:#f3ecdc; --ink:#2b2226; --grey:#6b6360; --rule:#e2d9c8;
+    --plum:#43203f; --purple:#6a2c91; --crimson:#c0322b; --gold:#b08948; --teal:#177f75; --green:#3d8f3d;
+    --serif:Georgia,"Iowan Old Style","Palatino Linotype","Book Antiqua",serif;
+    --sans:"Helvetica Neue",Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--cream);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%;}
+  .wrap{max-width:860px;margin:0 auto;padding:18px 12px 40px;}
+  .eyebrow{font-size:11px;letter-spacing:.2em;color:var(--gold);font-weight:600;text-transform:uppercase;}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(23px,4.6vw,33px);line-height:1.1;margin:5px 0 4px;color:var(--plum);letter-spacing:-.01em;}
+  h1 em{font-style:italic;color:var(--purple);font-weight:400;}
+  .sub{font-family:var(--serif);font-size:14.5px;color:var(--grey);line-height:1.5;margin:0 0 14px;max-width:700px;}
+  .sub b{color:var(--ink);font-weight:600;}
+  .sub .cs{color:var(--purple);} .sub .gl{color:var(--teal);} .sub .ns{color:var(--gold);}
+  .card{background:var(--paper);border:1px solid var(--rule);border-radius:5px;box-shadow:0 6px 22px rgba(43,34,38,.08);padding:10px 12px 8px;margin-bottom:12px;}
+  svg{width:100%;height:auto;display:block;border-radius:4px;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab;background:#fbf8f0;}
+  svg.grabbing{cursor:grabbing;}
+  .hint{font-size:11px;color:var(--grey);text-align:center;margin:0 0 4px;}
+  .ctl{display:grid;grid-template-columns:auto 1fr auto;gap:7px 10px;align-items:center;margin:8px 4px 4px;}
+  .ctl label{font-size:12px;color:var(--grey);}
+  .ctl label b{color:var(--ink);font-weight:600;}
+  .ctl .val{font-family:var(--serif);font-size:12.5px;min-width:72px;text-align:right;}
+  input[type=range]{-webkit-appearance:none;appearance:none;height:5px;border-radius:5px;outline:none;width:100%;}
+  #sD{background:linear-gradient(90deg,var(--ink),var(--crimson) 50%,var(--purple));}
+  #sZ0{background:linear-gradient(90deg,var(--teal),var(--rule));}
+  #sDl{background:linear-gradient(90deg,var(--green),var(--rule));}
+  #sB{background:linear-gradient(90deg,var(--rule),var(--green));}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--cream);border:2.5px solid var(--ink);cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.22);}
+  input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:var(--cream);border:2.5px solid var(--ink);cursor:pointer;}
+  input[type=range]:focus-visible{outline:2px solid var(--purple);outline-offset:3px;}
+  .row{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:6px 4px 2px;}
+  .tag{font-size:10.5px;color:var(--grey);letter-spacing:.1em;text-transform:uppercase;margin-right:2px;}
+  button{font-family:inherit;font-size:12px;color:var(--ink);background:var(--cream);border:1px solid var(--grey);border-radius:20px;padding:6px 11px;cursor:pointer;}
+  button:hover{background:var(--paper);} button.on{background:var(--ink);color:var(--cream);border-color:var(--ink);}
+  button.cs.on{background:var(--purple);border-color:var(--purple);} button.gl.on{background:var(--teal);border-color:var(--teal);}
+  button.sq.on{background:var(--gold);border-color:var(--gold);color:var(--ink);}
+  button:focus-visible{outline:2px solid var(--purple);outline-offset:2px;}
+  .grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px 12px;margin:6px 2px 6px;}
+  .cell{background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:8px 10px;}
+  .cell .k{font-size:10px;letter-spacing:.1em;color:var(--grey);text-transform:uppercase;}
+  .cell .v{font-family:var(--serif);font-size:15.5px;margin-top:2px;line-height:1.3;}
+  .cell .v small{font-size:11.5px;color:var(--grey);}
+  .wide{grid-column:1 / -1;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;justify-content:space-between;}
+  .badge{font-size:11.5px;font-weight:700;color:#fff;background:var(--green);border-radius:20px;padding:3px 10px;white-space:nowrap;}
+  .c-cr{color:var(--crimson);} .c-pu{color:var(--purple);} .c-go{color:var(--gold);} .c-te{color:var(--teal);} .c-gr{color:var(--green);} .c-pl{color:var(--plum);}
+  details{background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:2px 12px;margin:6px 0 12px;}
+  summary{cursor:pointer;list-style:none;padding:11px 0;font-family:var(--serif);font-weight:700;font-size:15px;color:var(--plum);}
+  summary::-webkit-details-marker{display:none;} summary::after{content:"＋";float:right;color:var(--grey);font-weight:400;}
+  details[open] summary::after{content:"−";}
+  details .body{font-family:var(--serif);font-size:14px;color:var(--grey);line-height:1.55;padding:0 0 10px;}
+  details .body p{margin:0 0 9px;} details .body b{color:var(--ink);font-weight:600;}
+  details .body h4{font-family:var(--sans);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin:12px 0 5px;font-weight:600;}
+  .eq{text-align:center;color:var(--plum);margin:.2rem 0 .7rem;}
+  .foot{font-family:var(--serif);font-size:13px;color:var(--grey);line-height:1.55;margin:2px 4px 0;} .foot b{color:var(--ink);font-weight:600;}
+  .colophon{font-size:10.5px;letter-spacing:.06em;color:var(--grey);margin:18px 4px 0;text-transform:uppercase;}
+  @media(max-width:560px){ .grid{grid-template-columns:1fr 1fr;} .cell .v{font-size:14px;} .ctl .val{min-width:60px;} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">The Harmonic Seam · companion instrument · the dial of §VI</div>
+  <h1>The calibration room — <em>a gridded room through the dial</em></h1>
+  <p class="sub">Split the station point Z<sub>p</sub> = 200 into two slits, Z<sub>v</sub> = Z<sub>p</sub> − D/2 and Z<sub>h</sub> = Z<sub>p</sub> + D/2, and one knob runs the whole family. At D = 0 the room images as a one-point perspective. Open D and the same congruence of lines reads two ways — as <b class="cs">rays</b> (cross-slit: depth lines bow, frames stay rectangles) or as <b class="gl">edges</b> (glide: depth lines straight) — with reciprocal gauges, product 1 along every ray. Between the slits the <b class="ns">neutral surface</b> z* = Z<sub>p</sub> − D²/4Z<sub>p</sub> leaves the eye only to second order; there the aspect ratio is −1 and the gauge costs nothing.</p>
+
+  <div class="card">
+    <p class="hint">drag to turn · pinch or scroll to zoom</p>
+    <svg id="svg" viewBox="0 0 780 620" role="img"
+      aria-label="Rotatable scene: the screen at z = 0, the vertical slit Zv in crimson and the horizontal slit Zh in purple, the station point between them with the gold neutral-surface chip, a green gridded room beyond, and on the screen the room's image in two readings — purple cross-slit with curved depth lines and teal glide with straight ones.">
+      <g id="scene"></g>
+    </svg>
+    <div class="ctl">
+      <label><b>the dial</b> · slit separation D</label>
+      <input id="sD" type="range" min="0" max="180" value="100" step="1" aria-label="slit separation D">
+      <span class="val" id="vD">—</span>
+      <label><b>working depth</b> z₀</label>
+      <input id="sZ0" type="range" min="300" max="800" value="350" step="1" aria-label="working depth">
+      <span class="val" id="vZ0">—</span>
+      <label><b>depth extent</b> Δ</label>
+      <input id="sDl" type="range" min="10" max="700" value="80" step="1" aria-label="depth extent">
+      <span class="val" id="vDl">—</span>
+      <label><b>breadth</b> B</label>
+      <input id="sB" type="range" min="20" max="160" value="100" step="1" aria-label="breadth">
+      <span class="val" id="vB">—</span>
+    </div>
+    <div class="row">
+      <span class="tag">reading</span>
+      <button id="bBoth" class="on">both</button>
+      <button id="bCS" class="cs">cross-slit · rays</button>
+      <button id="bGL" class="gl">glide · edges</button>
+      <button id="bSq" class="sq" style="margin-left:auto">▢ square the gauge at z₀</button>
+    </div>
+    <div class="row">
+      <span class="tag">presets</span>
+      <button id="pRig">the rig</button>
+      <button id="pPin">perspective · D = 0</button>
+      <button id="pWide">the wide section</button>
+      <button id="pCorr">the corridor · wrong case</button>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="cell"><div class="k">the slits</div><div class="v"><span class="c-cr">Z<sub>v</sub> <span id="oZv">150</span></span> · <span class="c-pu">Z<sub>h</sub> <span id="oZh">250</span></span><br><small>Z<sub>p</sub> = 200, D = <span id="oD">100</span></small></div></div>
+    <div class="cell"><div class="k c-go">neutral surface z*</div><div class="v"><span id="oZs">187.5</span><br><small>AR(z*) = <span id="oARs">−1.000</span> · both readings</small></div></div>
+    <div class="cell"><div class="k">three means, one eye at D = 0</div><div class="v"><small>HM</small> <span class="c-go" id="oHM">187.5</span> <small>GM</small> <span id="oGM">193.6</span> <small>AM</small> <span id="oAM">200</span></div></div>
+    <div class="cell"><div class="k">aspect a frontal square casts at z₀</div><div class="v"><span class="c-pu">AR <span id="oAR">—</span></span> · <span class="c-te">1/AR <span id="oARg">—</span></span><br><small>cross-slit · glide, reciprocal</small></div></div>
+    <div class="cell"><div class="k">the calibrated reading</div><div class="v"><span id="oDec">—</span><br><small>decode(AR) → z₀, true <span id="oZt">—</span></small></div></div>
+    <div class="cell"><div class="k">the correction (A13.3)</div><div class="v">factor <span id="oFac">—</span><br><small>ε<sub>x</sub> over Δ: <span id="oEps">—</span> first order · <span id="oEpsA">—</span> at band ends</small></div></div>
+    <div class="cell"><div class="k">the bow, corner depth line</div><div class="v"><span class="c-pu" id="oBow">—</span> <small>on a <span id="oChord">—</span> chord</small><br><small class="c-te">glide: <span id="oBowG">0</span></small></div></div>
+    <div class="cell"><div class="k">the budget (§IV)</div><div class="v">Δ·D <span id="oCost">—</span> <small>vs</small> B² <span id="oB2">—</span><br><small>verdict: <b id="oVerdict">—</b></small></div></div>
+    <div class="cell"><div class="k">two readings, one congruence</div><div class="v">m·g = <span id="oProd">1.000</span><br><small>drift <span id="oDrift">0</span> per channel</small></div></div>
+    <div class="cell wide">
+      <div>
+        <div class="k">aspect ratio = cross-ratio ( Z<sub>v</sub>, Z<sub>h</sub> ; screen, z₀ ) = depth</div>
+        <div class="v" id="oLoop">—</div>
+      </div>
+      <span class="badge" id="oBadge">reads depth ✓</span>
+    </div>
+  </div>
+
+  <details>
+    <summary>How the room fits the seam</summary>
+    <div class="body">
+      <h4>The dial</h4>
+      <p>Perspective's single center Z<sub>p</sub> is split, by construction, into two lines at two depths: Z<sub>v</sub> = Z<sub>p</sub> − D/2 (vertical slit, governs x) and Z<sub>h</sub> = Z<sub>p</sub> + D/2 (horizontal slit, governs y). The vertical slit scales x by Z<sub>v</sub>/(Z<sub>v</sub> − z), the horizontal scales y by Z<sub>h</sub>/(Z<sub>h</sub> − z). Their ratio is the aspect a frontal square casts,</p>
+      <p class="eq">AR(z) = (Z<sub>v</sub>/Z<sub>h</sub>) · (z − Z<sub>h</sub>)/(z − Z<sub>v</sub>),</p>
+      <p>a Möbius map of depth, and it is exactly the cross-ratio (Z<sub>v</sub>, Z<sub>h</sub> ; screen, z). At D = 0 the two factors coincide, AR ≡ 1 at every depth, and the single center can no longer tell one depth from another — that is what makes a pinhole a pinhole.</p>
+
+      <h4>The neutral surface and the three means</h4>
+      <p>The depth where the two magnifications exactly cancel — equal in size, opposite in sign — is the harmonic mean of the slit depths, z* = 2Z<sub>v</sub>Z<sub>h</sub>/(Z<sub>v</sub> + Z<sub>h</sub>) = Z<sub>p</sub> − D²/4Z<sub>p</sub>. There AR passes through −1: the four canonical points of every ray sit in harmonic position. The gold chip in the scene is that surface. At D = 0 it sits on the eye; as the dial opens it slides forward toward the screen, but only to second order in D. Splitting one center yields three, ordered as the classical inequality of means: the harmonic mean is the neutral surface, the geometric mean √(Z<sub>v</sub>Z<sub>h</sub>) is the mirror radius of the six-step duality check (small gold tick on the axis), and the arithmetic mean is the old station point.</p>
+
+      <h4>Two readings of one congruence</h4>
+      <p>The rays through the two slits are one congruence of lines. Read as <b class="c-pu">rays</b> collapsed to their pierce-points on the screen, it is the cross-slit camera: transversal frames stay rectangles, depth lines bow toward the central vanishing point (hyperbolic arcs; the Bowing Theorem). Read as <b class="c-te">edges</b> — each vertex a graduated projector with depth laid off linearly from footprint toward the slit — it is glide: depth lines straight, x graduated by (Z<sub>v</sub> − z)/Z<sub>v</sub> and y by (Z<sub>h</sub> − z)/Z<sub>h</sub>, reaching the image axes at the slit depths. Per channel the two gauges are reciprocal, m·g = 1 along every ray, so glide's aspect is 1/AR: the glide is the cross-slit reflected through the mirror of the neutral geometry, and both readings sit at −1 on the neutral surface. The two coincide at D = 0 and split exactly where the two slits are genuinely at two depths.</p>
+
+      <h4>Reading, correcting, budgeting</h4>
+      <p><b>Read.</b> Three fixed marks on every ray (the two slits and the nominated screen) plus the object make four, and four points on a line have a cross-ratio. Invert the Möbius map and the frame's aspect is its own depth: the panel closes this loop live, decode(AR) against the room's true working depth. <b>Correct.</b> At the working depth z₀ the anisotropy is one affine stretch, the same everywhere on the sheet, so one reciprocal factor 1/AR(z₀) squares it exactly — the ▢ button. Through a depth extent Δ the residual after squaring is ε<sub>x</sub> = D·Δ / 2(z₀ − Z<sub>v</sub>)(z₀ − Z<sub>h</sub>) to first order (A13.3); at the rig constants that is about four units of clean band per percent. The bow the factor cannot reach is O(Δ²). <b>Budget.</b> The scene belongs to whichever projection its proportions make cheaper: Δ·D against B². The presets carry the essay's cases — the wide section (glide's home ground), the corridor forced through the dial (perspective, and the plate's numbers: sagitta 1.5 on a 44.3 chord, AR saturating toward Z<sub>v</sub>/Z<sub>h</sub> = 0.6).</p>
+      <p style="color:var(--plum)">Rig: screen z = 0, Z<sub>p</sub> = 200, D = 100 → Z<sub>v</sub> = 150, Z<sub>h</sub> = 250, z* = 187.5. Verified in <i>check_calibration_room_v2.js</i> — 32 checks pass, run against the rig math this page embeds, including the draft's plate figures.</p>
+    </div>
+  </details>
+
+  <p class="foot">
+    Turn <b>the dial</b> from zero: the slits part, the frames stretch as the aspect cue engages, the gold chip leaves the eye, and the two readings split. Slide <b>z₀</b> and watch the decoded depth stay locked to the true one. Widen <b>Δ</b> and the bow grows while the correction's residual runs past tolerance; widen <b>B</b> and the budget turns toward glide. Press <b>▢</b> to square the frame at z₀ with one factor — the neutral surface's harmonic balance carried to the working plane.
+  </p>
+  <p class="colophon">The Harmonic Seam · draft C · companion to §V–§VIII · Kevin Forseth · flyingsticks.github.io</p>
+</div>
+
+<script>
+(function(){
+  /*RIG-BEGIN*/
+  var RIG = {
+    slits: function(Zp, D){ return { Zv: Zp - D/2, Zh: Zp + D/2 }; },
+    mX: function(Zv, z){ return Zv/(Zv - z); },
+    mY: function(Zh, z){ return Zh/(Zh - z); },
+    gX: function(Zv, z){ return (Zv - z)/Zv; },
+    gY: function(Zh, z){ return (Zh - z)/Zh; },
+    AR: function(Zv, Zh, z){ return (Zv/Zh)*(z - Zh)/(z - Zv); },
+    ARg: function(Zv, Zh, z){ return (Zh/Zv)*(z - Zv)/(z - Zh); },
+    zStar: function(Zv, Zh){ return 2*Zv*Zh/(Zv + Zh); },
+    zStarDial: function(Zp, D){ return Zp - D*D/(4*Zp); },
+    GM: function(Zv, Zh){ return Math.sqrt(Zv*Zh); },
+    decode: function(Zv, Zh, AR){ return Zv*Zh*(AR - 1)/(AR*Zh - Zv); },
+    crossRatio: function(a, b, c, d){ return ((c - a)*(d - b))/((c - b)*(d - a)); },
+    epsX: function(D, delta, z0, Zv, Zh){ return D*delta/(2*(z0 - Zv)*(z0 - Zh)); },
+    imgCS: function(Zv, Zh, X, Y, z){ return { x: X*Zv/(Zv - z), y: Y*Zh/(Zh - z) }; },
+    imgGL: function(Zv, Zh, X, Y, z){ return { x: X*(Zv - z)/Zv, y: Y*(Zh - z)/Zh }; },
+    sagitta: function(img, Zv, Zh, X, Y, z1, z2, N){
+      var A = img(Zv, Zh, X, Y, z1), B = img(Zv, Zh, X, Y, z2);
+      var dx = B.x - A.x, dy = B.y - A.y, L = Math.hypot(dx, dy); if (L < 1e-12) return { s: 0, chord: 0 };
+      var best = 0;
+      for (var i = 1; i < N; i++) { var z = z1 + (z2 - z1)*i/N, P = img(Zv, Zh, X, Y, z);
+        var d = Math.abs((P.x - A.x)*dy - (P.y - A.y)*dx)/L; if (d > best) best = d; }
+      return { s: best, chord: L };
+    },
+    budget: function(delta, D, B){ return { cost: delta*D, breadth: B*B, verdict: delta*D > B*B ? 'perspective' : 'glide' }; }
+  };
+  /*RIG-END*/
+  if (typeof module !== 'undefined') { module.exports = RIG; }
+
+  // ---------- palette (literal hex in every SVG attribute) ----------
+  var C = { ink:'#2b2226', grey:'#7a716c', faint:'#d8cfb8', plum:'#43203f', purple:'#6a2c91', crimson:'#c0322b',
+            gold:'#b08948', teal:'#177f75', green:'#3d8f3d', paper:'#fbf8f0' };
+  var Zp = 200;
+
+  function minus(s){ return s.replace(/^-/,"−"); }
+  function fmt(x,d){ return !isFinite(x)?"∞":minus(x.toFixed(d)); }
+  function $(id){ return document.getElementById(id); }
+
+  // ---------- orbit ----------
+  var st = { yaw:0.62, pitch:0.26, scale:1, CZ:200, OX:380, OY:312, fit:0.5 };
+  function xf(h,v,d){
+    var k = st.scale*st.fit, x=h, y=v, z=d-st.CZ;
+    var cy=Math.cos(st.yaw), sy=Math.sin(st.yaw);
+    var h1=x*cy+z*sy, z1=-x*sy+z*cy, v1=y;
+    var cp=Math.cos(st.pitch), sp=Math.sin(st.pitch);
+    var v2=v1*cp - z1*sp, z2=v1*sp + z1*cp;
+    return { x: st.OX + k*h1, y: st.OY - k*v2, z: z2 };
+  }
+  function P(o){ return o.x.toFixed(1)+","+o.y.toFixed(1); }
+  function Ln(A,B,s,w,ex){ return '<line x1="'+A.x.toFixed(1)+'" y1="'+A.y.toFixed(1)+'" x2="'+B.x.toFixed(1)+'" y2="'+B.y.toFixed(1)+'" stroke="'+s+'" stroke-width="'+w+'" '+(ex||'')+'/>'; }
+  function Poly(pts,s,w,ex){ return '<polyline points="'+pts.map(P).join(" ")+'" fill="none" stroke="'+s+'" stroke-width="'+w+'" stroke-linejoin="round" '+(ex||'')+'/>'; }
+  function Dt(o,r,c,ex){ return '<circle cx="'+o.x.toFixed(1)+'" cy="'+o.y.toFixed(1)+'" r="'+r+'" fill="'+c+'" stroke="'+C.paper+'" stroke-width="1.1" '+(ex||'')+'/>'; }
+  function Tx(o,s,c,anc,sz,dy,ex){ return '<text x="'+o.x.toFixed(1)+'" y="'+(o.y+(dy||0)).toFixed(1)+'" font-family="Georgia,serif" font-size="'+(sz||11)+'" fill="'+c+'" text-anchor="'+(anc||'middle')+'" '+(ex||'')+'>'+s+'</text>'; }
+  function Sq(hx,hy,z){ return [[-hx,-hy],[hx,-hy],[hx,hy],[-hx,hy],[-hx,-hy]].map(function(p){ return xf(p[0],p[1],z); }); }
+
+  var svg = $('svg'), scene = $('scene');
+  // window-level listeners filtered by pointerId; one pointer turns, two pinch
+  var ptrs = {}, gest = null;
+  function pdist(){ var ids=Object.keys(ptrs); if(ids.length<2) return 0; var a=ptrs[ids[0]], b=ptrs[ids[1]]; return Math.hypot(a.x-b.x,a.y-b.y); }
+  svg.addEventListener('pointerdown', function(e){
+    ptrs[e.pointerId] = {x:e.clientX, y:e.clientY};
+    var n = Object.keys(ptrs).length;
+    if (n === 1) gest = { kind:'turn', x0:e.clientX, y0:e.clientY, yaw:st.yaw, pitch:st.pitch };
+    else if (n === 2) gest = { kind:'pinch', d0:pdist(), s0:st.scale };
+    svg.classList.add('grabbing'); e.preventDefault();
+  });
+  window.addEventListener('pointermove', function(e){
+    if (!(e.pointerId in ptrs)) return;
+    ptrs[e.pointerId] = {x:e.clientX, y:e.clientY};
+    if (!gest) return;
+    if (gest.kind === 'turn' && Object.keys(ptrs).length === 1) {
+      st.yaw = gest.yaw + (e.clientX - gest.x0)*0.010;
+      st.pitch = Math.max(-1.5533, Math.min(1.5533, gest.pitch + (e.clientY - gest.y0)*0.010));
+      render();
+    } else if (gest.kind === 'pinch') {
+      var d = pdist(); if (gest.d0 > 0 && d > 0) { st.scale = Math.max(0.4, Math.min(2.6, gest.s0*d/gest.d0)); render(); }
+    }
+  });
+  function end(e){ if (!(e.pointerId in ptrs)) return; delete ptrs[e.pointerId];
+    var ids = Object.keys(ptrs);
+    if (ids.length === 0) { gest = null; svg.classList.remove('grabbing'); }
+    else if (ids.length === 1) { var p = ptrs[ids[0]]; gest = { kind:'turn', x0:p.x, y0:p.y, yaw:st.yaw, pitch:st.pitch }; } }
+  window.addEventListener('pointerup', end); window.addEventListener('pointercancel', end);
+  svg.addEventListener('wheel', function(e){ e.preventDefault(); st.scale = Math.max(0.4, Math.min(2.6, st.scale*Math.exp(-e.deltaY*0.0012))); render(); }, {passive:false});
+
+  // ---------- controls ----------
+  var sD=$('sD'), sZ0=$('sZ0'), sDl=$('sDl'), sB=$('sB');
+  var mode = 'both', squared = false;
+  function setMode(m){ mode = m; $('bBoth').classList.toggle('on', m==='both'); $('bCS').classList.toggle('on', m==='cs'); $('bGL').classList.toggle('on', m==='gl'); render(); }
+  $('bBoth').addEventListener('click', function(){ setMode('both'); });
+  $('bCS').addEventListener('click', function(){ setMode('cs'); });
+  $('bGL').addEventListener('click', function(){ setMode('gl'); });
+  $('bSq').addEventListener('click', function(){ squared = !squared; this.classList.toggle('on', squared); render(); });
+  function preset(D, z0, dl, B){ sD.value=D; sZ0.value=z0; sDl.value=dl; sB.value=B; render(); }
+  $('pRig').addEventListener('click', function(){ preset(100, 350, 80, 100); });
+  $('pPin').addEventListener('click', function(){ preset(0, 350, 80, 100); });
+  $('pWide').addEventListener('click', function(){ preset(100, 350, 40, 160); });
+  $('pCorr').addEventListener('click', function(){ preset(100, 650, 600, 40); });
+  [sD,sZ0,sDl,sB].forEach(function(el){ el.addEventListener('input', render); });
+
+  var seedsUnit = [[-1,-1],[1,-1],[1,1],[-1,1],[0,-1],[1,0],[0,1],[-1,0]];
+
+  function render(){
+    var D = +sD.value, S = RIG.slits(Zp, D), Zv = S.Zv, Zh = S.Zh;
+    var z0 = +sZ0.value, B = +sB.value, W = B/2;
+    // the room must stay beyond the far slit: front ≥ Zh + 20
+    var dlMax = Math.max(10, 2*(z0 - Zh - 20));
+    var dl = Math.min(+sDl.value, dlMax); if (dl !== +sDl.value) sDl.value = dl;
+    var zF = z0 - dl/2, zBk = z0 + dl/2;
+    var zs = RIG.zStar(Zv, Zh), gm = RIG.GM(Zv, Zh);
+    var pin = D === 0;
+
+
+    var AR = RIG.AR(Zv, Zh, z0), ARg = RIG.ARg(Zv, Zh, z0);
+    var fCS = squared ? 1/AR : 1, fGL = squared ? 1/ARg : 1;
+    function iCS(X,Y,z){ var p = RIG.imgCS(Zv,Zh,X,Y,z); return { x: p.x*fCS, y: p.y }; }
+    function iGL(X,Y,z){ var p = RIG.imgGL(Zv,Zh,X,Y,z); return { x: p.x*fGL, y: p.y }; }
+    var showCS = mode !== 'gl', showGL = mode !== 'cs';
+
+    // screen card fits the images it carries
+    var ext = 0;
+    [[-W,-W],[W,W]].forEach(function(c){ [zF,zBk].forEach(function(z){
+      if (showCS) { var a = iCS(c[0],c[1],z); ext = Math.max(ext, Math.abs(a.x), Math.abs(a.y)); }
+      if (showGL) { var b = iGL(c[0],c[1],z); ext = Math.max(ext, Math.abs(b.x), Math.abs(b.y)); } }); });
+    var card = Math.max(56, Math.min(260, ext + 10));
+    // scene framing: fit from the sliders alone (reference view), so turning never rescales
+    st.CZ = 0.45*zBk;
+    var kx = 700/((zBk+40)*0.58 + 2*Math.max(W,card)*0.81), ky = 540/(2*Math.max(W,card)*0.97 + (zBk+40)*0.26);
+    st.fit = Math.min(kx, ky, 0.9);
+
+    var Zframes = [zF, zF + (z0-zF)/2, z0, z0 + (zBk-z0)/2, zBk];
+    var seeds = seedsUnit.map(function(u){ return [u[0]*W, u[1]*W]; });
+    var s = "";
+
+    // ---- optical axis with the three means ----
+    s += Ln(xf(0,0,-16), xf(0,0,zBk+30), C.faint, 1, 'stroke-dasharray="2 5"');
+    s += Tx(xf(0,-card-8,0), 'screen z = 0', C.ink, 'middle', 10, 0);
+
+    // ---- slits ----
+    s += Ln(xf(0,-72,Zv), xf(0,72,Zv), C.crimson, 2.6, '');
+    s += Ln(xf(-72,0,Zh), xf(72,0,Zh), C.purple, 2.6, '');
+    if (!pin) {
+      s += Tx(xf(0,-76,Zv), 'Z<tspan font-size="7" dy="2">v</tspan> '+fmt(Zv,0), C.crimson, 'middle', 10.5, 10);
+      s += Tx(xf(74,-6,Zh), 'Z<tspan font-size="7" dy="2">h</tspan> '+fmt(Zh,0), C.purple, 'start', 10.5, 8);
+    }
+
+    // ---- neutral surface chip (gold, dashed) ----
+    var chipH = Math.max(16, Math.min(40, W*0.5));
+    s += Poly(Sq(chipH, chipH, zs), C.gold, 1.4, 'stroke-dasharray="5 4"');
+    s += Dt(xf(0,0,zs), 2.6, C.gold);
+    s += Tx(xf(-chipH-6, 0, zs), pin ? 'z* on the eye' : 'z* = '+fmt(zs,1)+' · neutral surface', C.gold, 'end', 10, 4);
+    // GM tick and station point
+    if (!pin) { s += Dt(xf(0,0,gm), 2.2, C.paper, 'stroke="'+C.gold+'" stroke-width="1.2"'); }
+    s += Dt(xf(0,0,Zp), 3, C.ink);
+    s += Tx(xf(0,0,Zp), pin ? 'pinhole · one eye' : 'Z<tspan font-size="7" dy="2">p</tspan>', C.ink, 'start', 10, pin?-14:-8, pin?'dx="10"':'dx="6"');
+
+    // ---- projectors: working-frame corners → cross-slit images, through both slits ----
+    if (showCS) [[-W,-W],[W,-W],[W,W],[-W,W]].forEach(function(c){
+      var m = iCS(c[0],c[1],z0);
+      s += Ln(xf(c[0],c[1],z0), xf(m.x,m.y,0), C.gold, 1, 'opacity="0.55"');
+    });
+
+    // ---- the room (green) ----
+    seeds.forEach(function(sd){ s += Ln(xf(sd[0],sd[1],zF), xf(sd[0],sd[1],zBk), C.green, 1, 'opacity="0.6"'); });
+    Zframes.forEach(function(Z,i){ s += Poly(Sq(W,W,Z), C.green, i===2?2.1:(i===0||i===4?1.4:0.9), i===2?'':'opacity="0.85"'); });
+    s += Tx(xf(0,-W-8,zBk), 'gridded room · B = '+B+', Δ = '+fmt(dl,0), C.green, 'middle', 10.5, 10);
+    s += Tx(xf(W+4,W,z0), 'z₀', C.teal, 'start', 10, 4);
+
+    // ---- the screen card ----
+    s += '<path d="M'+Sq(card,card,0).slice(0,4).map(P).join(" L")+' Z" fill="rgba(43,34,38,0.035)" stroke="'+C.ink+'" stroke-width="1"/>';
+
+    // ---- glide reading (teal, straight) ----
+    if (showGL) {
+      seeds.forEach(function(sd){ var a = iGL(sd[0],sd[1],zF), b = iGL(sd[0],sd[1],zBk); s += Ln(xf(a.x,a.y,0), xf(b.x,b.y,0), C.teal, 1.1, 'opacity="0.9"'); });
+      Zframes.forEach(function(Z,i){
+        var pts = [[-W,-W],[W,-W],[W,W],[-W,W],[-W,-W]].map(function(p){ var m = iGL(p[0],p[1],Z); return xf(m.x,m.y,0); });
+        s += Poly(pts, C.teal, i===2?1.9:1, 'stroke-dasharray="5 4"');
+      });
+    }
+    // ---- cross-slit reading (purple, curved) ----
+    if (showCS) {
+      seeds.forEach(function(sd){ var pts=[], N=16;
+        for (var i=0;i<=N;i++){ var Z = zF + (zBk-zF)*i/N, m = iCS(sd[0],sd[1],Z); pts.push(xf(m.x,m.y,0)); }
+        s += Poly(pts, C.purple, 1.2, ''); });
+      Zframes.forEach(function(Z,i){
+        var pts = [[-W,-W],[W,-W],[W,W],[-W,W],[-W,-W]].map(function(p){ var m = iCS(p[0],p[1],Z); return xf(m.x,m.y,0); });
+        s += Poly(pts, C.plum, i===2?1.9:1, '');
+      });
+    }
+    s += Dt(xf(0,0,0), 3.2, C.plum);
+    var cap = pin ? 'D = 0: both readings fuse on the spokes through V — only their graduations differ' :
+      (mode==='both' ? 'purple rays bow toward V · teal edges run straight' : (mode==='cs' ? 'cross-slit: depth lines bow toward V' : 'glide: depth lines straight, axes reached at the slits'));
+    s += Tx(xf(0,card,0), cap + (squared ? ' · squared at z₀' : ''), mode==='gl'?C.teal:C.purple, 'middle', 10, 14);
+
+    scene.innerHTML = s;
+
+    // ---------- ledger ----------
+    $('vD').textContent = 'D = ' + D; $('vZ0').textContent = 'z₀ = ' + z0; $('vDl').textContent = 'Δ = ' + fmt(dl,0) + (dl<+sDl.max&&dl===dlMax?' (max)':''); $('vB').textContent = 'B = ' + B;
+    $('oZv').textContent = fmt(Zv,0); $('oZh').textContent = fmt(Zh,0); $('oD').textContent = D;
+    $('oZs').textContent = fmt(zs,1) + (pin ? ' = Z\u209a' : ''); $('oARs').textContent = fmt(RIG.AR(Zv,Zh,zs),3);
+    $('oHM').textContent = fmt(zs,1); $('oGM').textContent = fmt(gm,1); $('oAM').textContent = Zp;
+    $('oAR').textContent = fmt(AR,3); $('oARg').textContent = fmt(ARg,3);
+    $('oZt').textContent = z0;
+    $('oFac').textContent = pin ? '1 (nothing to square)' : '1/AR = ' + fmt(1/AR,3) + (squared ? ' · applied' : '');
+    var eps = RIG.epsX(D, dl, z0, Zv, Zh), epsA = Math.max(Math.abs(RIG.AR(Zv,Zh,zBk)/AR - 1), Math.abs(RIG.AR(Zv,Zh,zF)/AR - 1));
+    $('oEps').textContent = fmt(100*eps,1) + '%'; $('oEpsA').textContent = fmt(100*epsA,1) + '%';
+    var bow = RIG.sagitta(RIG.imgCS, Zv, Zh, W, W, zF, zBk, 80), bowG = RIG.sagitta(RIG.imgGL, Zv, Zh, W, W, zF, zBk, 80);
+    $('oBow').textContent = 'sagitta ' + fmt(bow.s,2); $('oChord').textContent = fmt(bow.chord,1); $('oBowG').textContent = bowG.s < 1e-9 ? '0' : bowG.s.toExponential(1);
+    var bg = RIG.budget(dl, D, B);
+    $('oCost').textContent = bg.cost.toLocaleString(); $('oB2').textContent = bg.breadth.toLocaleString();
+    var vd = $('oVerdict'); vd.textContent = pin ? 'perspective (D = 0)' : bg.verdict; vd.style.color = bg.verdict==='glide' && !pin ? C.teal : C.plum;
+    var drift = 0; [zF, z0, zBk].forEach(function(z){ drift = Math.max(drift, Math.abs(RIG.mX(Zv,z)*RIG.gX(Zv,z)-1), Math.abs(RIG.mY(Zh,z)*RIG.gY(Zh,z)-1)); });
+    $('oProd').textContent = fmt(RIG.mX(Zv,z0)*RIG.gX(Zv,z0),3); $('oDrift').textContent = drift < 1e-15 ? '0' : drift.toExponential(1);
+    var bd = $('oBadge');
+    if (!pin) {
+      var Zdec = RIG.decode(Zv, Zh, AR), good = Math.abs(Zdec - z0) < 1e-6;
+      $('oDec').textContent = fmt(Zdec,1);
+      $('oLoop').textContent = 'AR ' + fmt(AR,3) + ' = (' + fmt(Zv,0) + ', ' + fmt(Zh,0) + ' ; 0, ' + z0 + ')  →  z₀ ' + fmt(Zdec,1);
+      bd.style.background = good ? C.green : C.gold; bd.textContent = good ? 'reads depth ✓' : '≈';
+    } else {
+      $('oDec').textContent = 'unreadable';
+      $('oLoop').textContent = 'AR ≡ 1 at every depth — the single center cannot resolve z₀';
+      bd.style.background = '#8a7d68'; bd.textContent = 'depth lost';
+    }
+  }
+
+  render();
+})();
+</script>
+</body>
+</html>
